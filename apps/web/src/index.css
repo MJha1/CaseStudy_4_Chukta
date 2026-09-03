@@ -1,0 +1,83 @@
+@import 'tailwindcss';
+
+/*
+ * Brand tokens (CHUKTA_BUILD_SPEC.md §1). Semantic values live on :root and are
+ * swapped under prefers-color-scheme:dark; `@theme inline` maps them to Tailwind
+ * color utilities (bg-brand, text-ink, border-line, …) that follow the theme.
+ */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-paper: var(--paper);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-brand: var(--brand);
+  --color-brand-dark: var(--brand-dark);
+  --color-brand-soft: var(--brand-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-ok: var(--ok);
+
+  --font-sans: 'Manrope', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: 'Space Mono', ui-monospace, 'SFMono-Regular', monospace;
+
+  --radius-xl: 1.25rem;
+}
+
+:root {
+  --bg: #f3f6f4;
+  --paper: #ffffff;
+  --ink: #16211d;
+  --muted: #5d6b65;
+  --line: #e3e9e5;
+  --brand: #0e8c6e;
+  --brand-dark: #0a6e56;
+  --brand-soft: #dcefe8;
+  --danger: #c43a2b;
+  --danger-soft: #f7e0dc;
+  --warn: #b4720f;
+  --warn-soft: #f6ead2;
+  --ok: #0e8c6e;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0b1310;
+    --paper: #14201b;
+    --ink: #eaf2ee;
+    --muted: #93a69e;
+    --line: #223029;
+    --brand: #17a883;
+    --brand-dark: #0e8c6e;
+    --brand-soft: #14312a;
+    --danger: #e5634f;
+    --danger-soft: #34201d;
+    --warn: #d69022;
+    --warn-soft: #33291a;
+    --ok: #17a883;
+  }
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior-y: none;
+}
+
+/* Numbers, plates, amounts */
+.tabular {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}

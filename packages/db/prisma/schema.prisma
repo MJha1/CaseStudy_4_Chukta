@@ -1,0 +1,73 @@
+// Chukta database schema — mirrors CHUKTA_BUILD_SPEC.md §4.
+// All rows are scoped by `deviceId`: an anonymous, client-generated id. There
+// are no accounts and no cross-device linkage. Enum-like fields are stored as
+// strings and validated at the API boundary by the @chukta/shared Zod schemas.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Vehicle {
+  id           String    @id @default(cuid())
+  deviceId     String
+  plate        String
+  model        String?
+  vehicleClass String? // 'LMV' | '2W' | 'GOODS' | 'TRANSPORT'
+  soldDate     String? // ISO date; presence => "sold" checks apply
+  isSample     Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+  challans     Challan[]
+
+  @@index([deviceId])
+}
+
+model Challan {
+  id           String   @id @default(cuid())
+  deviceId     String
+  vehicleId    String
+  offence      String
+  section      String?
+  amount       Int
+  date         String // ISO date
+  location     String?
+  city         String?
+  evidenceNote String?
+  isPaid       Boolean  @default(false) // status is otherwise derived from date
+  flag         String? // 'classMismatch' | 'sold' | 'duplicate'
+  isSample     Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  vehicle      Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@index([deviceId])
+  @@index([vehicleId])
+}
+
+model Dispute {
+  id            String   @id @default(cuid())
+  deviceId      String
+  plate         String
+  challanNo     String?
+  offence       String
+  amount        Int
+  date          String // ISO date of the challan
+  city          String?
+  location      String?
+  ground        String // GroundKey
+  note          String?
+  saleDate      String?
+  receipt       String?
+  name          String?
+  mobile        String?
+  hasScreenshot Boolean  @default(false)
+  letter        String
+  filed         Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  @@index([deviceId])
+}

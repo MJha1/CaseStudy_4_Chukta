@@ -1,0 +1,31 @@
+{
+  "name": "chukta",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Chukta — find, understand, and dispute India's traffic challans.",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -k -n api,web -c blue,green \"npm:dev:api\" \"npm:dev:web\"",
+    "dev:web": "npm run dev --workspace @chukta/web",
+    "dev:api": "npm run dev --workspace @chukta/api",
+    "build": "npm run build --workspace @chukta/shared && npm run build --workspace @chukta/db && npm run build --workspace @chukta/api && npm run build --workspace @chukta/web",
+    "test": "npm run test --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "db:generate": "npm run generate --workspace @chukta/db",
+    "db:push": "npm run push --workspace @chukta/db",
+    "db:migrate": "npm run migrate --workspace @chukta/db",
+    "db:seed": "npm run seed --workspace @chukta/db",
+    "e2e": "playwright test"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3",
+    "@playwright/test": "^1.50.1",
+    "concurrently": "^9.1.2"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
