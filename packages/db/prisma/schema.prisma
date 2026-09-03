@@ -4,7 +4,9 @@
 // strings and validated at the API boundary by the @chukta/shared Zod schemas.
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  // native = local dev; debian target covers Railway's Linux runtime.
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
 }
 
 datasource db {

@@ -14,10 +14,10 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
+      // The API is mounted under /api on the server, so forward the path as-is.
       '/api': {
         target: process.env.VITE_API_TARGET ?? 'http://localhost:4000',
         changeOrigin: true,
-        rewrite: (p) => p.replace(/^\/api/, ''),
       },
     },
   },
