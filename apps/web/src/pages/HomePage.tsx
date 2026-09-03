@@ -152,9 +152,11 @@ export function HomePage() {
           ) : (
             <button
               onClick={backToSignIn}
-              className="inline-flex h-9 items-center gap-1.5 rounded-full bg-brand px-3.5 text-[13px] font-semibold text-white"
+              aria-label="Sign in"
+              title="Sign in"
+              className="flex size-9 items-center justify-center rounded-full bg-brand text-white"
             >
-              <LogIn className="size-4" /> Sign in
+              <LogIn className="size-[18px]" />
             </button>
           )}
         </div>
