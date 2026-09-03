@@ -16,8 +16,8 @@ import {
   FileText,
   Moon,
   Sun,
-  LogIn,
 } from 'lucide-react';
+import { SignInIcon } from '@/components/icons/SignInIcon';
 import { daysLeft, type Challan, type Vehicle } from '@chukta/shared';
 import { Card, CardBody } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -154,9 +154,9 @@ export function HomePage() {
               onClick={backToSignIn}
               aria-label="Sign in"
               title="Sign in"
-              className="flex size-9 items-center justify-center rounded-full bg-brand text-white"
+              className="flex size-9 items-center justify-center rounded-full bg-brand-soft text-brand"
             >
-              <LogIn className="size-[18px]" />
+              <SignInIcon className="size-[22px]" />
             </button>
           )}
         </div>
