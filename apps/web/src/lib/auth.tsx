@@ -19,6 +19,7 @@ interface AuthContextValue {
   user: User | null;
   signInWithGoogle: (idToken: string) => Promise<void>;
   continueAsGuest: () => void;
+  backToSignIn: () => void;
   signOut: () => void;
 }
 
@@ -27,6 +28,7 @@ const AuthContext = createContext<AuthContextValue>({
   user: null,
   signInWithGoogle: async () => {},
   continueAsGuest: () => {},
+  backToSignIn: () => {},
   signOut: () => {},
 });
 
@@ -71,6 +73,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setStatus('guest');
   }, []);
 
+  // Return a guest to the sign-in screen (their on-device data is untouched and
+  // is claimed if they later sign in).
+  const backToSignIn = useCallback(() => {
+    clearGuestChosen();
+    setStatus('signedout');
+  }, []);
+
   const signOut = useCallback(() => {
     clearSessionToken();
     clearGuestChosen();
@@ -79,7 +88,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ status, user, signInWithGoogle, continueAsGuest, signOut }}>
+    <AuthContext.Provider
+      value={{ status, user, signInWithGoogle, continueAsGuest, backToSignIn, signOut }}
+    >
       {children}
     </AuthContext.Provider>
   );

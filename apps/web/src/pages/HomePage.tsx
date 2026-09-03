@@ -16,6 +16,7 @@ import {
   FileText,
   Moon,
   Sun,
+  LogIn,
 } from 'lucide-react';
 import { daysLeft, type Challan, type Vehicle } from '@chukta/shared';
 import { Card, CardBody } from '@/components/ui/card';
@@ -40,7 +41,7 @@ const QUICK_ACTIONS = [
 export function HomePage() {
   const navigate = useNavigate();
   const toast = useToast();
-  const { user } = useAuth();
+  const { user, status, backToSignIn } = useAuth();
   const { theme, toggle } = useTheme();
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [challans, setChallans] = useState<Challan[]>([]);
@@ -136,17 +137,26 @@ export function HomePage() {
               <span className="absolute right-2 top-2 size-2 rounded-full bg-danger" />
             )}
           </button>
-          <button
-            onClick={() => navigate('/profile')}
-            aria-label="Profile"
-            className="flex size-9 items-center justify-center overflow-hidden rounded-full bg-brand-soft text-[13px] font-bold text-brand-dark"
-          >
-            {user?.picture ? (
-              <img src={user.picture} alt="" referrerPolicy="no-referrer" className="size-full object-cover" />
-            ) : (
-              initials(user?.name, user?.email)
-            )}
-          </button>
+          {status === 'signedin' ? (
+            <button
+              onClick={() => navigate('/profile')}
+              aria-label="Profile"
+              className="flex size-9 items-center justify-center overflow-hidden rounded-full bg-brand-soft text-[13px] font-bold text-brand-dark"
+            >
+              {user?.picture ? (
+                <img src={user.picture} alt="" referrerPolicy="no-referrer" className="size-full object-cover" />
+              ) : (
+                initials(user?.name, user?.email)
+              )}
+            </button>
+          ) : (
+            <button
+              onClick={backToSignIn}
+              className="inline-flex h-9 items-center gap-1.5 rounded-full bg-brand px-3.5 text-[13px] font-semibold text-white"
+            >
+              <LogIn className="size-4" /> Sign in
+            </button>
+          )}
         </div>
       </header>
 
