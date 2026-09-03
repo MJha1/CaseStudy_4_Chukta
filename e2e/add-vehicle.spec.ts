@@ -6,6 +6,8 @@ import { test, expect } from '@playwright/test';
  * government fetch). This intentionally does not submit, to avoid writing rows.
  */
 test('add-vehicle screen shows the form and the labelled auto-fetch demo', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: /continue as guest/i }).click();
   await page.goto('/vehicles/new');
 
   // F5 — manual entry.

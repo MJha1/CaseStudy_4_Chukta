@@ -21,6 +21,7 @@ import { Badge } from '@/components/ui/badge';
 import { listVehicles, listChallans, loadDemo } from '@/lib/api';
 import { useRefreshOnFocus } from '@/lib/useRefreshOnFocus';
 import { useToast } from '@/components/Toast';
+import { useAuth } from '@/lib/auth';
 
 const inr = (n: number) => n.toLocaleString('en-IN');
 
@@ -36,6 +37,7 @@ const QUICK_ACTIONS = [
 export function HomePage() {
   const navigate = useNavigate();
   const toast = useToast();
+  const { user } = useAuth();
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [challans, setChallans] = useState<Challan[]>([]);
   const [loading, setLoading] = useState(true);
@@ -123,14 +125,24 @@ export function HomePage() {
               <span className="absolute right-2 top-2 size-2 rounded-full bg-danger" />
             )}
           </button>
-          <div className="flex size-9 items-center justify-center rounded-full bg-brand-soft text-[13px] font-bold text-brand-dark">
-            CH
-          </div>
+          <button
+            onClick={() => navigate('/profile')}
+            aria-label="Profile"
+            className="flex size-9 items-center justify-center overflow-hidden rounded-full bg-brand-soft text-[13px] font-bold text-brand-dark"
+          >
+            {user?.picture ? (
+              <img src={user.picture} alt="" referrerPolicy="no-referrer" className="size-full object-cover" />
+            ) : (
+              initials(user?.name, user?.email)
+            )}
+          </button>
         </div>
       </header>
 
       <div className="px-4 pb-2 pt-2">
-        <h1 className="text-[22px] font-extrabold tracking-tight text-ink">Hello 👋</h1>
+        <h1 className="text-[22px] font-extrabold tracking-tight text-ink">
+          {user?.name ? `Hello, ${user.name.split(' ')[0]} 👋` : 'Hello 👋'}
+        </h1>
         <p className="text-[13px] text-muted">Manage your vehicles and clear your challans.</p>
       </div>
 
@@ -326,6 +338,12 @@ export function HomePage() {
       )}
     </div>
   );
+}
+
+function initials(name?: string, email?: string): string {
+  const src = name?.trim() || email || '';
+  const parts = src.split(/[\s@.]+/).filter(Boolean);
+  return (parts[0]?.[0] ?? 'U').toUpperCase() + (parts[1]?.[0] ?? '').toUpperCase();
 }
 
 function Chip({ label }: { label: string }) {

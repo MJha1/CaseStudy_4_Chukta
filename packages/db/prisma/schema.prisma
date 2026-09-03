@@ -1,7 +1,8 @@
-// Chukta database schema — mirrors CHUKTA_BUILD_SPEC.md §4.
-// All rows are scoped by `deviceId`: an anonymous, client-generated id. There
-// are no accounts and no cross-device linkage. Enum-like fields are stored as
-// strings and validated at the API boundary by the @chukta/shared Zod schemas.
+// Chukta database schema.
+// Rows belong to either a signed-in User (userId) or an anonymous guest device
+// (deviceId, userId null). Signing in claims a device's rows into the user.
+// Enum-like fields are stored as strings and validated at the API boundary by
+// the @chukta/shared Zod schemas.
 
 generator client {
   provider      = "prisma-client-js"
@@ -15,9 +16,19 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+model User {
+  id        String   @id @default(cuid())
+  googleSub String   @unique
+  email     String
+  name      String?
+  picture   String?
+  createdAt DateTime @default(now())
+}
+
 model Vehicle {
   id           String    @id @default(cuid())
-  deviceId     String
+  deviceId     String? // set for guest-owned rows
+  userId       String? // set for signed-in-user-owned rows
   plate        String
   model        String?
   vehicleClass String? // 'LMV' | '2W' | 'GOODS' | 'TRANSPORT'
@@ -27,11 +38,13 @@ model Vehicle {
   challans     Challan[]
 
   @@index([deviceId])
+  @@index([userId])
 }
 
 model Challan {
   id           String   @id @default(cuid())
-  deviceId     String
+  deviceId     String?
+  userId       String?
   vehicleId    String
   offence      String
   section      String?
@@ -47,12 +60,14 @@ model Challan {
   vehicle      Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
 
   @@index([deviceId])
+  @@index([userId])
   @@index([vehicleId])
 }
 
 model Dispute {
   id            String   @id @default(cuid())
-  deviceId      String
+  deviceId      String?
+  userId        String?
   plate         String
   challanNo     String?
   offence       String
@@ -72,4 +87,5 @@ model Dispute {
   createdAt     DateTime @default(now())
 
   @@index([deviceId])
+  @@index([userId])
 }

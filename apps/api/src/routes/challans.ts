@@ -2,21 +2,20 @@ import { Router } from 'express';
 import { prisma } from '@chukta/db';
 import { createChallanSchema, flagChallans } from '@chukta/shared';
 import { validateBody } from '../validate.js';
+import { ownerWhere, ownerData } from '../actor.js';
 import { toChallan, toVehicle } from '../mappers.js';
 
 export const challansRouter = Router();
 
-// List the device's challans, optionally by vehicle.
+// List the actor's challans, optionally by vehicle.
 // Flags are computed live from the F4 heuristics engine, not read from storage.
 challansRouter.get('/', async (req, res) => {
   const vehicleId = typeof req.query.vehicleId === 'string' ? req.query.vehicleId : undefined;
+  const owner = ownerWhere(req.actor);
   const [vehicleRows, challanRows] = await Promise.all([
-    prisma.vehicle.findMany({ where: { deviceId: req.deviceId } }),
+    prisma.vehicle.findMany({ where: owner }),
     prisma.challan.findMany({
-      where: {
-        deviceId: req.deviceId,
-        ...(vehicleId ? { vehicleId } : {}),
-      },
+      where: { ...owner, ...(vehicleId ? { vehicleId } : {}) },
       orderBy: { date: 'desc' },
     }),
   ]);
@@ -24,11 +23,11 @@ challansRouter.get('/', async (req, res) => {
   res.json(flagged);
 });
 
-// Add a challan to a vehicle (must be one the device owns).
+// Add a challan to a vehicle (must be one the actor owns).
 challansRouter.post('/', validateBody(createChallanSchema), async (req, res) => {
   const input = req.body;
   const vehicle = await prisma.vehicle.findFirst({
-    where: { id: input.vehicleId, deviceId: req.deviceId },
+    where: { id: input.vehicleId, ...ownerWhere(req.actor) },
   });
   if (!vehicle) {
     res.status(404).json({ error: 'Vehicle not found' });
@@ -36,7 +35,7 @@ challansRouter.post('/', validateBody(createChallanSchema), async (req, res) => 
   }
   const row = await prisma.challan.create({
     data: {
-      deviceId: req.deviceId,
+      ...ownerData(req.actor),
       vehicleId: input.vehicleId,
       offence: input.offence,
       section: input.section,
@@ -54,7 +53,7 @@ challansRouter.post('/', validateBody(createChallanSchema), async (req, res) => 
 // Delete a challan.
 challansRouter.delete('/:id', async (req, res) => {
   const result = await prisma.challan.deleteMany({
-    where: { id: String(req.params.id), deviceId: req.deviceId },
+    where: { id: String(req.params.id), ...ownerWhere(req.actor) },
   });
   if (result.count === 0) {
     res.status(404).json({ error: 'Challan not found' });

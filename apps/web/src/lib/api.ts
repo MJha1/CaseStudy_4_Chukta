@@ -5,6 +5,8 @@ import {
   disputeSchema,
   providerInfoSchema,
   fetchChallansResponseSchema,
+  authResponseSchema,
+  userSchema,
   type CreateVehicleInput,
   type CreateChallanInput,
   type CreateDisputeInput,
@@ -13,8 +15,11 @@ import {
   type Dispute,
   type FetchChallansResponse,
   type AnalyticsEvent,
+  type AuthResponse,
+  type User,
 } from '@chukta/shared';
 import { getDeviceId } from './device';
+import { getSessionToken } from './session';
 
 const BASE = (import.meta.env.VITE_API_BASE as string | undefined) ?? '/api';
 
@@ -33,10 +38,14 @@ async function request<T>(
   schema: z.ZodType<T> | null,
   init?: RequestInit,
 ): Promise<T> {
+  const token = getSessionToken();
   const res = await fetch(`${BASE}${path}`, {
     ...init,
     headers: {
       'content-type': 'application/json',
+      // A valid Bearer session takes precedence server-side; the device id is
+      // the guest fallback.
+      ...(token ? { authorization: `Bearer ${token}` } : {}),
       'x-device-id': getDeviceId(),
       ...(init?.headers ?? {}),
     },
@@ -107,5 +116,13 @@ export const postAnalytics = (event: AnalyticsEvent): void => {
     () => {},
   );
 };
+
+// --- Auth ---
+export const googleSignIn = (idToken: string, deviceId: string): Promise<AuthResponse> =>
+  request('/auth/google', authResponseSchema, {
+    method: 'POST',
+    body: JSON.stringify({ idToken, deviceId }),
+  });
+export const fetchMe = (): Promise<User> => request('/auth/me', userSchema);
 
 export { ApiError };

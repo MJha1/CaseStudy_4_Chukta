@@ -7,6 +7,8 @@ import { test, expect } from '@playwright/test';
  */
 test('draft a dispute and see it in the tracker', async ({ page }) => {
   await page.goto('/');
+  // Pass the sign-in gate as a guest.
+  await page.getByRole('button', { name: /continue as guest/i }).click();
   await expect(page.getByText(/hello/i).first()).toBeVisible();
 
   // Start the drafter via the Quick Actions grid.

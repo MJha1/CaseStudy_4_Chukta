@@ -1,4 +1,5 @@
 import { prisma } from '@chukta/db';
+import { ownerWhere, ownerData, type Actor } from './actor.js';
 
 /**
  * Opt-in demo dataset. Loaded into a device on request (POST /api/demo/load)
@@ -61,18 +62,19 @@ function demoVehicles(): DemoVehicle[] {
   ];
 }
 
-/** Load the demo dataset into a device (idempotent: clears any prior demo rows first). */
-export async function loadDemoData(deviceId: string): Promise<{ vehicles: number; challans: number }> {
-  // Remove previously loaded demo rows for this device so reloads don't stack.
-  await prisma.challan.deleteMany({ where: { deviceId, isSample: true } });
-  await prisma.vehicle.deleteMany({ where: { deviceId, isSample: true } });
+/** Load the demo dataset for an actor (idempotent: clears any prior demo rows first). */
+export async function loadDemoData(actor: Actor): Promise<{ vehicles: number; challans: number }> {
+  const owner = ownerData(actor);
+  // Remove previously loaded demo rows for this actor so reloads don't stack.
+  await prisma.challan.deleteMany({ where: { ...ownerWhere(actor), isSample: true } });
+  await prisma.vehicle.deleteMany({ where: { ...ownerWhere(actor), isSample: true } });
 
   let vehicleCount = 0;
   let challanCount = 0;
   for (const v of demoVehicles()) {
     const vehicle = await prisma.vehicle.create({
       data: {
-        deviceId,
+        ...owner,
         plate: v.plate,
         model: v.model,
         vehicleClass: v.vehicleClass,
@@ -83,7 +85,7 @@ export async function loadDemoData(deviceId: string): Promise<{ vehicles: number
     vehicleCount++;
     if (v.challans.length) {
       await prisma.challan.createMany({
-        data: v.challans.map((c) => ({ ...c, deviceId, vehicleId: vehicle.id, isSample: true })),
+        data: v.challans.map((c) => ({ ...c, ...owner, vehicleId: vehicle.id, isSample: true })),
       });
       challanCount += v.challans.length;
     }

@@ -9,7 +9,8 @@ import cors from 'cors';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import fs from 'node:fs';
-import { requireDeviceId } from './deviceId.js';
+import { identify } from './actor.js';
+import { authRouter } from './routes/auth.js';
 import { vehiclesRouter } from './routes/vehicles.js';
 import { challansRouter } from './routes/challans.js';
 import { disputesRouter } from './routes/disputes.js';
@@ -30,11 +31,12 @@ export function createApp(): Express {
   api.get('/health', (_req, res) => {
     res.json({ ok: true });
   });
-  api.use('/vehicles', requireDeviceId, vehiclesRouter);
-  api.use('/challans', requireDeviceId, challansRouter);
-  api.use('/disputes', requireDeviceId, disputesRouter);
-  api.use('/analytics', requireDeviceId, analyticsRouter);
-  api.use('/demo', requireDeviceId, demoRouter);
+  api.use('/auth', authRouter);
+  api.use('/vehicles', identify, vehiclesRouter);
+  api.use('/challans', identify, challansRouter);
+  api.use('/disputes', identify, disputesRouter);
+  api.use('/analytics', identify, analyticsRouter);
+  api.use('/demo', identify, demoRouter);
   api.use('/providers', providersRouter);
   app.use('/api', api);
 

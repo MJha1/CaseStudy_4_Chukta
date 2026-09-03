@@ -177,3 +177,28 @@ export const fetchChallansRequestSchema = z.object({
   providerId: z.string().min(1),
 });
 export type FetchChallansRequest = z.infer<typeof fetchChallansRequestSchema>;
+
+// ---------------------------------------------------------------------------
+// Auth (Google sign-in)
+// ---------------------------------------------------------------------------
+
+export const userSchema = z.object({
+  id: z.string(),
+  email: z.string(),
+  name: z.string().optional(),
+  picture: z.string().optional(),
+});
+export type User = z.infer<typeof userSchema>;
+
+export const authResponseSchema = z.object({
+  token: z.string(),
+  user: userSchema,
+});
+export type AuthResponse = z.infer<typeof authResponseSchema>;
+
+export const googleAuthRequestSchema = z.object({
+  idToken: z.string().min(10),
+  /** The current guest device id, so its data can be claimed into the account. */
+  deviceId: z.string().optional(),
+});
+export type GoogleAuthRequest = z.infer<typeof googleAuthRequestSchema>;

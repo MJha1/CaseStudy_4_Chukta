@@ -53,6 +53,9 @@ Open http://localhost:5173. The web dev server proxies `/api` → `http://localh
 | `VITE_API_BASE` | web env | optional; defaults to `/api` (proxied in dev) |
 | `PORT` | api env | optional; API port, defaults to 4000 |
 | `CHALLAN_PROVIDER_URL` / `CHALLAN_PROVIDER_KEY` / `CHALLAN_PROVIDER_NAME` | api env | optional; when set, a real licensed challan-data provider is added to the fetch options (else only the labelled demo vendors) |
+| `GOOGLE_CLIENT_ID` | api env | Google OAuth client id used to verify sign-in tokens. Without it, Google sign-in is disabled (guest mode still works). |
+| `VITE_GOOGLE_CLIENT_ID` | web build | the same Google client id, baked into the web build to render the "Continue with Google" button. |
+| `SESSION_JWT_SECRET` | api env | secret for signing session tokens issued after sign-in. Required for Google sign-in. |
 
 ## Ethics
 
