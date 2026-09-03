@@ -17,6 +17,17 @@
       rel="stylesheet"
     />
     <title>Chukta — clear your challans</title>
+    <script>
+      // Apply the saved theme (default: dark) before paint to avoid a flash.
+      (function () {
+        try {
+          var t = localStorage.getItem('chukta.theme') || 'dark';
+          document.documentElement.setAttribute('data-theme', t);
+        } catch (e) {
+          document.documentElement.setAttribute('data-theme', 'dark');
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

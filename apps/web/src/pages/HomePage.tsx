@@ -14,6 +14,8 @@ import {
   Clock,
   Sparkles,
   FileText,
+  Moon,
+  Sun,
 } from 'lucide-react';
 import { daysLeft, type Challan, type Vehicle } from '@chukta/shared';
 import { Card, CardBody } from '@/components/ui/card';
@@ -22,6 +24,7 @@ import { listVehicles, listChallans, loadDemo } from '@/lib/api';
 import { useRefreshOnFocus } from '@/lib/useRefreshOnFocus';
 import { useToast } from '@/components/Toast';
 import { useAuth } from '@/lib/auth';
+import { useTheme } from '@/lib/theme';
 
 const inr = (n: number) => n.toLocaleString('en-IN');
 
@@ -38,6 +41,7 @@ export function HomePage() {
   const navigate = useNavigate();
   const toast = useToast();
   const { user } = useAuth();
+  const { theme, toggle } = useTheme();
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [challans, setChallans] = useState<Challan[]>([]);
   const [loading, setLoading] = useState(true);
@@ -119,6 +123,13 @@ export function HomePage() {
           <span className="text-[17px] font-extrabold tracking-tight text-ink">Chukta</span>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            onClick={toggle}
+            aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            className="flex size-9 items-center justify-center rounded-full bg-paper text-ink ring-1 ring-line"
+          >
+            {theme === 'dark' ? <Sun className="size-[18px]" /> : <Moon className="size-[18px]" />}
+          </button>
           <button className="relative flex size-9 items-center justify-center rounded-full bg-paper text-ink ring-1 ring-line">
             <Bell className="size-[18px]" />
             {stats.anyOverdue && (

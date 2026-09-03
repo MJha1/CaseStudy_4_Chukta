@@ -1,10 +1,12 @@
 import { useNavigate } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
-import { ArrowLeft, LogOut, ShieldCheck, UserRound } from 'lucide-react';
+import { ArrowLeft, LogOut, ShieldCheck, UserRound, Moon, Sun } from 'lucide-react';
 import { Card, CardBody } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth';
+import { useTheme } from '@/lib/theme';
 import { useToast } from '@/components/Toast';
+import { cn } from '@/lib/utils';
 
 const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
 
@@ -18,6 +20,7 @@ export function ProfilePage() {
   const navigate = useNavigate();
   const toast = useToast();
   const { status, user, signInWithGoogle, signOut } = useAuth();
+  const { theme, setTheme } = useTheme();
 
   return (
     <div>
@@ -29,6 +32,30 @@ export function ProfilePage() {
       </header>
 
       <div className="space-y-4 px-4 py-5">
+        {/* Appearance */}
+        <div>
+          <p className="mb-2 px-1 text-[13px] font-bold text-ink">Appearance</p>
+          <div className="grid grid-cols-2 gap-2">
+            {(['dark', 'light'] as const).map((t) => {
+              const Icon = t === 'dark' ? Moon : Sun;
+              return (
+                <button
+                  key={t}
+                  onClick={() => setTheme(t)}
+                  className={cn(
+                    'flex items-center justify-center gap-2 rounded-2xl border p-3.5 text-sm font-semibold capitalize transition-colors',
+                    theme === t
+                      ? 'border-brand bg-brand-soft text-brand-dark'
+                      : 'border-line bg-paper text-ink hover:border-brand/40',
+                  )}
+                >
+                  <Icon className="size-4" /> {t}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         {status === 'signedin' && user ? (
           <>
             <Card>

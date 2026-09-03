@@ -40,24 +40,25 @@
   --warn: #b4720f;
   --warn-soft: #f6ecd6;
   --ok: #157a4b;
+  color-scheme: light;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #10130f;
-    --paper: #191d17;
-    --ink: #eaf1ea;
-    --muted: #98a49b;
-    --line: #2a2f27;
-    --brand: #2f9d68;
-    --brand-dark: #157a4b;
-    --brand-soft: #16281f;
-    --danger: #e5634f;
-    --danger-soft: #341f1c;
-    --warn: #d69022;
-    --warn-soft: #322818;
-    --ok: #2f9d68;
-  }
+/* Dark is the default theme (set via data-theme on <html> by the init script). */
+:root[data-theme='dark'] {
+  --bg: #10130f;
+  --paper: #191d17;
+  --ink: #eaf1ea;
+  --muted: #98a49b;
+  --line: #2a2f27;
+  --brand: #2f9d68;
+  --brand-dark: #157a4b;
+  --brand-soft: #16281f;
+  --danger: #e5634f;
+  --danger-soft: #341f1c;
+  --warn: #d69022;
+  --warn-soft: #322818;
+  --ok: #2f9d68;
+  color-scheme: dark;
 }
 
 html,
