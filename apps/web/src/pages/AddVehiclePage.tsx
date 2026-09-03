@@ -1,17 +1,18 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Sparkles, Check, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Plus, Sparkles, Check, AlertTriangle, Search } from 'lucide-react';
 import {
   prettyDate,
   type VehicleClass,
-  type CreateChallanInput,
+  type ProviderInfo,
+  type FetchChallansResponse,
 } from '@chukta/shared';
 import { Button } from '@/components/ui/button';
 import { Card, CardBody } from '@/components/ui/card';
 import { Input, Label, Hint, FieldError } from '@/components/ui/field';
+import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { createVehicle, createChallan } from '@/lib/api';
-import { simulateFetchedChallans } from '@/lib/simulate';
+import { createVehicle, createChallan, listProviders, fetchVehicleChallans } from '@/lib/api';
 import { track } from '@/lib/analytics';
 import { useToast } from '@/components/Toast';
 
@@ -33,8 +34,19 @@ export function AddVehiclePage() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  // F6 preview state
-  const [fetched, setFetched] = useState<CreateChallanInput[] | null>(null);
+  const [providers, setProviders] = useState<ProviderInfo[]>([]);
+  const [providerId, setProviderId] = useState<string>('');
+  const [fetched, setFetched] = useState<FetchChallansResponse | null>(null);
+  const [fetchedVehicleId, setFetchedVehicleId] = useState<string>('');
+
+  useEffect(() => {
+    listProviders()
+      .then((p) => {
+        setProviders(p);
+        if (p[0]) setProviderId(p[0].id);
+      })
+      .catch(() => {});
+  }, []);
 
   function validate(): boolean {
     if (plate.replace(/\s+/g, '').length < 6) {
@@ -69,13 +81,15 @@ export function AddVehiclePage() {
     }
   }
 
-  async function fetchDemo() {
-    if (!validate()) return;
+  async function fetchFromProvider() {
+    if (!validate() || !providerId) return;
     setBusy(true);
     try {
       const vehicle = await makeVehicle();
-      track('vehicle_added', { source: 'autofetch_demo' });
-      setFetched(simulateFetchedChallans(vehicle.id));
+      track('vehicle_added', { source: 'autofetch', provider: providerId });
+      const result = await fetchVehicleChallans(vehicle.id, providerId);
+      setFetchedVehicleId(vehicle.id);
+      setFetched(result);
     } catch (e) {
       toast(e instanceof Error ? e.message : 'Could not fetch');
     } finally {
@@ -87,8 +101,8 @@ export function AddVehiclePage() {
     if (!fetched) return;
     setBusy(true);
     try {
-      for (const c of fetched) await createChallan(c);
-      toast(`${fetched.length} challans added`);
+      for (const c of fetched.challans) await createChallan({ ...c, vehicleId: fetchedVehicleId });
+      toast(`${fetched.challans.length} challans added`);
       navigate('/challans');
     } catch (e) {
       toast(e instanceof Error ? e.message : 'Could not add challans');
@@ -169,7 +183,7 @@ export function AddVehiclePage() {
               <Plus className="size-5" /> {busy ? 'Adding…' : 'Add vehicle'}
             </Button>
 
-            {/* F6 — auto-fetch preview */}
+            {/* F6 — fetch from a challan-data provider */}
             <div className="relative py-1 text-center">
               <span className="bg-bg px-3 text-[12px] font-semibold text-muted">or</span>
             </div>
@@ -177,34 +191,75 @@ export function AddVehiclePage() {
               <CardBody className="space-y-3">
                 <div className="flex items-center gap-2">
                   <Sparkles className="size-5 text-brand" />
-                  <p className="text-sm font-bold text-ink">Auto-fetch challans</p>
+                  <p className="text-sm font-bold text-ink">Fetch challans from a provider</p>
                 </div>
                 <div className="flex items-start gap-2 rounded-xl bg-warn-soft p-2.5">
                   <AlertTriangle className="mt-0.5 size-4 shrink-0 text-warn" />
                   <p className="text-[12px] font-semibold text-warn">
-                    Demo — a live version fetches from VAHAN/mParivahan with your consent.
+                    Demo providers — a live version fetches from a licensed VAHAN/mParivahan data
+                    partner with your consent.
                   </p>
                 </div>
-                <Button variant="secondary" size="block" onClick={fetchDemo} disabled={busy}>
-                  {busy ? 'Fetching…' : 'Fetch challans (Demo)'}
+                <div className="space-y-2">
+                  {providers.map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => setProviderId(p.id)}
+                      className={cn(
+                        'flex w-full items-center justify-between rounded-xl border p-3 text-left transition-colors',
+                        providerId === p.id
+                          ? 'border-brand bg-brand-soft'
+                          : 'border-line bg-paper hover:border-brand/40',
+                      )}
+                    >
+                      <span>
+                        <span className="flex items-center gap-2">
+                          <span className="text-sm font-semibold text-ink">{p.name}</span>
+                          <Badge tone={p.simulated ? 'sample' : 'ok'}>
+                            {p.simulated ? 'Demo' : 'Live'}
+                          </Badge>
+                        </span>
+                        {p.note && <span className="block text-[12px] text-muted">{p.note}</span>}
+                      </span>
+                      <span
+                        className={cn(
+                          'flex size-5 shrink-0 items-center justify-center rounded-full border-2',
+                          providerId === p.id ? 'border-brand bg-brand text-white' : 'border-line',
+                        )}
+                      >
+                        {providerId === p.id && <Check className="size-3" strokeWidth={3} />}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+                <Button
+                  variant="secondary"
+                  size="block"
+                  onClick={fetchFromProvider}
+                  disabled={busy || !providerId}
+                >
+                  <Search className="size-4" /> {busy ? 'Fetching…' : 'Fetch challans'}
                 </Button>
               </CardBody>
             </Card>
           </>
         ) : (
-          /* F6 — preview of simulated results */
+          /* F6 — preview of the provider's results */
           <div className="space-y-4">
             <div className="flex items-start gap-2 rounded-xl bg-warn-soft p-3">
               <AlertTriangle className="mt-0.5 size-4 shrink-0 text-warn" />
               <p className="text-[12px] font-semibold text-warn">
-                Demo results for {plate}. A live version fetches these from VAHAN/mParivahan
-                with your consent.
+                {fetched.provider.name} (demo) returned these for {plate}. A live provider is a
+                licensed data partner.
               </p>
             </div>
             <p className="text-[13px] font-semibold text-ink">
-              Found {fetched.length} challans
+              {fetched.challans.length > 0
+                ? `Found ${fetched.challans.length} challans`
+                : 'No challans found for this vehicle'}
             </p>
-            {fetched.map((c, i) => (
+            {fetched.challans.map((c, i) => (
               <Card key={i}>
                 <CardBody className="flex items-center justify-between gap-2">
                   <div>
@@ -220,11 +275,14 @@ export function AddVehiclePage() {
                 </CardBody>
               </Card>
             ))}
-            <Button size="block" onClick={confirmFetched} disabled={busy}>
-              <Check className="size-5" /> {busy ? 'Adding…' : `Add ${fetched.length} challans`}
-            </Button>
+            {fetched.challans.length > 0 && (
+              <Button size="block" onClick={confirmFetched} disabled={busy}>
+                <Check className="size-5" />{' '}
+                {busy ? 'Adding…' : `Add ${fetched.challans.length} challans`}
+              </Button>
+            )}
             <Button variant="ghost" size="block" onClick={() => navigate('/challans')}>
-              Skip
+              {fetched.challans.length > 0 ? 'Skip' : 'Done'}
             </Button>
           </div>
         )}

@@ -13,7 +13,12 @@ test('add-vehicle screen shows the form and the labelled auto-fetch demo', async
   await expect(page.getByLabel(/registration number/i)).toBeVisible();
   await expect(page.getByRole('button', { name: /^Add vehicle$/i })).toBeVisible();
 
-  // F6 — the fetch is present AND clearly labelled as a demo.
-  await expect(page.getByText(/a live version fetches from VAHAN\/mParivahan/i)).toBeVisible();
-  await expect(page.getByRole('button', { name: /fetch challans \(demo\)/i })).toBeVisible();
+  // F6 — the fetch is present, lists providers, AND is clearly labelled as a demo.
+  await expect(
+    page.getByText(/a live version fetches from a licensed VAHAN\/mParivahan data partner/i),
+  ).toBeVisible();
+  // Providers load from the API; at least one demo vendor is shown.
+  await expect(page.getByText('ChallanBridge')).toBeVisible();
+  await expect(page.getByText('Demo').first()).toBeVisible();
+  await expect(page.getByRole('button', { name: /^Fetch challans$/i })).toBeVisible();
 });

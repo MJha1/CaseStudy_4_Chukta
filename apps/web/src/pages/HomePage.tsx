@@ -1,11 +1,13 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AlertTriangle, ShieldCheck, Sparkles, ChevronRight, Plus } from 'lucide-react';
 import type { Challan, Vehicle } from '@chukta/shared';
 import { Button } from '@/components/ui/button';
 import { Card, CardBody } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { listVehicles, listChallans } from '@/lib/api';
+import { listVehicles, listChallans, loadDemo } from '@/lib/api';
+import { useRefreshOnFocus } from '@/lib/useRefreshOnFocus';
+import { useToast } from '@/components/Toast';
 
 function inr(n: number): string {
   return n.toLocaleString('en-IN');
@@ -13,12 +15,14 @@ function inr(n: number): string {
 
 export function HomePage() {
   const navigate = useNavigate();
+  const toast = useToast();
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [challans, setChallans] = useState<Challan[]>([]);
   const [loading, setLoading] = useState(true);
+  const [demoBusy, setDemoBusy] = useState(false);
 
-  useEffect(() => {
-    Promise.all([listVehicles(), listChallans()])
+  const load = useCallback(() => {
+    return Promise.all([listVehicles(), listChallans()])
       .then(([v, c]) => {
         setVehicles(v);
         setChallans(c);
@@ -26,6 +30,25 @@ export function HomePage() {
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  useRefreshOnFocus(load);
+
+  async function handleLoadDemo() {
+    setDemoBusy(true);
+    try {
+      await loadDemo();
+      await load();
+      toast('Demo data loaded');
+    } catch {
+      toast('Could not load demo data');
+    } finally {
+      setDemoBusy(false);
+    }
+  }
 
   const stats = useMemo(() => {
     const unpaid = challans.filter((c) => c.status !== 'paid');
@@ -163,6 +186,25 @@ export function HomePage() {
               </button>
             ))}
             {loading && <p className="py-6 text-center text-sm text-muted">Loading…</p>}
+            {!loading && vehicles.length === 0 && (
+              <Card>
+                <CardBody className="flex flex-col items-center py-8 text-center">
+                  <p className="text-[15px] font-bold text-ink">No vehicles yet</p>
+                  <p className="mb-4 mt-1 max-w-[240px] text-[13px] text-muted">
+                    Add your vehicle to track and dispute its challans — or load demo data to
+                    explore.
+                  </p>
+                  <div className="flex flex-col items-center gap-2">
+                    <Button onClick={() => navigate('/vehicles/new')}>
+                      <Plus className="size-4" /> Add vehicle
+                    </Button>
+                    <Button variant="ghost" onClick={handleLoadDemo} disabled={demoBusy}>
+                      {demoBusy ? 'Loading…' : 'Load demo data'}
+                    </Button>
+                  </div>
+                </CardBody>
+              </Card>
+            )}
           </div>
         </div>
 

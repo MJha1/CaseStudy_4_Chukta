@@ -22,10 +22,10 @@ npm install
 cp packages/db/.env.example packages/db/.env
 #   then edit packages/db/.env and set DATABASE_URL (pooled) and DIRECT_URL (direct)
 
-# 2. Create the schema and seed sample data
+# 2. Create the schema
 npm run db:generate     # generate the Prisma client
 npm run db:push         # sync schema to Neon (no shadow DB; fast + reliable)
-npm run db:seed         # load 3 sample vehicles + challans
+# (No seed step — demo data is loaded per-device in-app via "Load demo data".)
 
 # 3. Run both apps (API on :4000, web on :5173)
 npm run dev             # or: npm run dev:api / npm run dev:web
@@ -49,9 +49,10 @@ Open http://localhost:5173. The web dev server proxies `/api` → `http://localh
 | Var | Where | Purpose |
 |---|---|---|
 | `DATABASE_URL` | `packages/db/.env` | Neon Postgres connection string (required) |
-| `VITE_MIXPANEL_TOKEN` | web env | optional; analytics no-op + console.log when unset |
+| `VITE_MIXPANEL_TOKEN` | web env | optional; analytics also post to the server sink regardless |
 | `VITE_API_BASE` | web env | optional; defaults to `/api` (proxied in dev) |
 | `PORT` | api env | optional; API port, defaults to 4000 |
+| `CHALLAN_PROVIDER_URL` / `CHALLAN_PROVIDER_KEY` / `CHALLAN_PROVIDER_NAME` | api env | optional; when set, a real licensed challan-data provider is added to the fetch options (else only the labelled demo vendors) |
 
 ## Ethics
 

@@ -1,5 +1,6 @@
 import mixpanel from 'mixpanel-browser';
 import type { AnalyticsEventName } from '@chukta/shared';
+import { postAnalytics } from './api';
 
 type Props = Record<string, string | number | boolean>;
 
@@ -51,4 +52,6 @@ export function track(name: AnalyticsEventName, props?: Props): void {
     // eslint-disable-next-line no-console
     console.log(`[analytics] ${name}`, props ?? {});
   }
+  // Also send to the server sink so capture is real end-to-end without Mixpanel.
+  postAnalytics({ name, props });
 }

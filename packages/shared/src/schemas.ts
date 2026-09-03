@@ -139,3 +139,41 @@ export const analyticsEventSchema = z.object({
   props: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])).optional(),
 });
 export type AnalyticsEvent = z.infer<typeof analyticsEventSchema>;
+
+// ---------------------------------------------------------------------------
+// Challan-data providers (the "fetch challans" seam)
+// ---------------------------------------------------------------------------
+
+/** Metadata for a challan-data provider the app can fetch from. */
+export const providerInfoSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  /** True for a simulated/demo provider; false for a real licensed data source. */
+  simulated: z.boolean(),
+  note: z.string().optional(),
+});
+export type ProviderInfo = z.infer<typeof providerInfoSchema>;
+
+/** A challan as returned by a provider (before it is persisted to a vehicle). */
+export const providerChallanSchema = z.object({
+  offence: z.string().min(1),
+  section: z.string().optional(),
+  amount: z.number().nonnegative(),
+  date: z.string(),
+  location: z.string().optional(),
+  city: z.string().optional(),
+  evidenceNote: z.string().optional(),
+});
+export type ProviderChallan = z.infer<typeof providerChallanSchema>;
+
+/** Response of a fetch-challans call: which provider ran and what it returned. */
+export const fetchChallansResponseSchema = z.object({
+  provider: providerInfoSchema,
+  challans: z.array(providerChallanSchema),
+});
+export type FetchChallansResponse = z.infer<typeof fetchChallansResponseSchema>;
+
+export const fetchChallansRequestSchema = z.object({
+  providerId: z.string().min(1),
+});
+export type FetchChallansRequest = z.infer<typeof fetchChallansRequestSchema>;

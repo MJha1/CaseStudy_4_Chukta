@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FileText, Trash2, Check, Gavel, Plus, X, Copy } from 'lucide-react';
 import { GROUNDS, prettyDate, type Dispute } from '@chukta/shared';
@@ -10,6 +10,7 @@ import { listDisputes, setDisputeFiled, deleteDispute } from '@/lib/api';
 import { track } from '@/lib/analytics';
 import { useToast } from '@/components/Toast';
 import { copyText } from '@/lib/clipboard';
+import { useRefreshOnFocus } from '@/lib/useRefreshOnFocus';
 import { PageHeader } from '@/components/PageHeader';
 
 export function DisputesPage() {
@@ -19,11 +20,17 @@ export function DisputesPage() {
   const [viewing, setViewing] = useState<Dispute | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const load = useCallback(() => {
     listDisputes()
       .then(setDisputes)
       .catch((e) => setError(e instanceof Error ? e.message : 'Could not load disputes'));
   }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  useRefreshOnFocus(load);
 
   async function toggleFiled(d: Dispute) {
     const nextFiled = !d.filed;

@@ -20,7 +20,6 @@
     "db:generate": "npm run generate --workspace @chukta/db",
     "db:push": "npm run push --workspace @chukta/db",
     "db:migrate": "npm run migrate --workspace @chukta/db",
-    "db:seed": "npm run seed --workspace @chukta/db",
     "e2e": "playwright test"
   },
   "devDependencies": {

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AlertTriangle, Gavel, Plus, Car } from 'lucide-react';
 import {
@@ -13,8 +13,10 @@ import { Card, CardBody } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/PageHeader';
-import { listVehicles, listChallans } from '@/lib/api';
+import { listVehicles, listChallans, loadDemo } from '@/lib/api';
 import { track } from '@/lib/analytics';
+import { useRefreshOnFocus } from '@/lib/useRefreshOnFocus';
+import { useToast } from '@/components/Toast';
 import type { DraftState } from '@/components/drafter/draft';
 
 const STATUS_TONE: Record<ChallanStatus, 'neutral' | 'warn' | 'danger' | 'ok'> = {
@@ -26,12 +28,14 @@ const STATUS_TONE: Record<ChallanStatus, 'neutral' | 'warn' | 'danger' | 'ok'> =
 
 export function ChallansPage() {
   const navigate = useNavigate();
+  const toast = useToast();
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [challans, setChallans] = useState<Challan[]>([]);
   const [loading, setLoading] = useState(true);
+  const [demoBusy, setDemoBusy] = useState(false);
 
-  useEffect(() => {
-    Promise.all([listVehicles(), listChallans()])
+  const load = useCallback(() => {
+    return Promise.all([listVehicles(), listChallans()])
       .then(([v, c]) => {
         setVehicles(v);
         setChallans(c);
@@ -39,6 +43,25 @@ export function ChallansPage() {
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  useRefreshOnFocus(load);
+
+  async function handleLoadDemo() {
+    setDemoBusy(true);
+    try {
+      await loadDemo();
+      await load();
+      toast('Demo data loaded');
+    } catch {
+      toast('Could not load demo data');
+    } finally {
+      setDemoBusy(false);
+    }
+  }
 
   const vehicleById = useMemo(
     () => Object.fromEntries(vehicles.map((v) => [v.id, v])),
@@ -127,12 +150,17 @@ export function ChallansPage() {
                 <Car className="size-7 text-brand" />
               </div>
               <p className="text-base font-bold text-ink">No challans yet</p>
-              <p className="mb-4 mt-1 max-w-[220px] text-[13px] text-muted">
-                Add a vehicle to enter challans or try the auto-fetch demo.
+              <p className="mb-4 mt-1 max-w-[240px] text-[13px] text-muted">
+                Add a vehicle to enter or fetch challans — or load demo data to explore.
               </p>
-              <Button onClick={() => navigate('/vehicles/new')}>
-                <Plus className="size-4" /> Add vehicle
-              </Button>
+              <div className="flex flex-col items-center gap-2">
+                <Button onClick={() => navigate('/vehicles/new')}>
+                  <Plus className="size-4" /> Add vehicle
+                </Button>
+                <Button variant="ghost" onClick={handleLoadDemo} disabled={demoBusy}>
+                  {demoBusy ? 'Loading…' : 'Load demo data'}
+                </Button>
+              </div>
             </CardBody>
           </Card>
         )}

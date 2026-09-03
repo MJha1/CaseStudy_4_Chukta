@@ -3,12 +3,16 @@ import {
   vehicleSchema,
   challanSchema,
   disputeSchema,
+  providerInfoSchema,
+  fetchChallansResponseSchema,
   type CreateVehicleInput,
   type CreateChallanInput,
   type CreateDisputeInput,
   type Vehicle,
   type Challan,
   type Dispute,
+  type FetchChallansResponse,
+  type AnalyticsEvent,
 } from '@chukta/shared';
 import { getDeviceId } from './device';
 
@@ -79,5 +83,29 @@ export const setDisputeFiled = (id: string, filed: boolean): Promise<Dispute> =>
   });
 export const deleteDispute = (id: string) =>
   request(`/disputes/${id}`, null, { method: 'DELETE' });
+
+// --- Providers (challan-data fetch) ---
+export const listProviders = () => request('/providers', z.array(providerInfoSchema));
+export const fetchVehicleChallans = (
+  vehicleId: string,
+  providerId: string,
+): Promise<FetchChallansResponse> =>
+  request(`/vehicles/${vehicleId}/fetch-challans`, fetchChallansResponseSchema, {
+    method: 'POST',
+    body: JSON.stringify({ providerId }),
+  });
+
+// --- Demo data (opt-in) ---
+export const loadDemo = () =>
+  request('/demo/load', z.object({ vehicles: z.number(), challans: z.number() }), {
+    method: 'POST',
+  });
+
+// --- Analytics sink (fire-and-forget; never throws to callers) ---
+export const postAnalytics = (event: AnalyticsEvent): void => {
+  void request('/analytics', null, { method: 'POST', body: JSON.stringify(event) }).catch(
+    () => {},
+  );
+};
 
 export { ApiError };

@@ -14,6 +14,8 @@ import { vehiclesRouter } from './routes/vehicles.js';
 import { challansRouter } from './routes/challans.js';
 import { disputesRouter } from './routes/disputes.js';
 import { analyticsRouter } from './routes/analytics.js';
+import { providersRouter } from './routes/providers.js';
+import { demoRouter } from './routes/demo.js';
 
 /** Build the Express app. Exported (unlistened) so tests can drive it directly. */
 export function createApp(): Express {
@@ -32,6 +34,8 @@ export function createApp(): Express {
   api.use('/challans', requireDeviceId, challansRouter);
   api.use('/disputes', requireDeviceId, disputesRouter);
   api.use('/analytics', requireDeviceId, analyticsRouter);
+  api.use('/demo', requireDeviceId, demoRouter);
+  api.use('/providers', providersRouter);
   app.use('/api', api);
 
   // Unknown /api routes → JSON 404 (before the SPA fallback).
