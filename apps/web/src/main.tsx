@@ -10,6 +10,7 @@ import { DisputesPage } from '@/pages/DisputesPage';
 import { ProPage } from '@/pages/ProPage';
 import { DrafterPage } from '@/pages/DrafterPage';
 import { AddVehiclePage } from '@/pages/AddVehiclePage';
+import { VehicleDetailPage } from '@/pages/VehicleDetailPage';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
@@ -23,6 +24,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
             <Route path="/pro" element={<ProPage />} />
             <Route path="/dispute/new" element={<DrafterPage />} />
             <Route path="/vehicles/new" element={<AddVehiclePage />} />
+            <Route path="/vehicles/:id" element={<VehicleDetailPage />} />
           </Route>
         </Routes>
       </ToastProvider>

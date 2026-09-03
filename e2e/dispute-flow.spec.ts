@@ -7,10 +7,10 @@ import { test, expect } from '@playwright/test';
  */
 test('draft a dispute and see it in the tracker', async ({ page }) => {
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: /clear your challans/i })).toBeVisible();
+  await expect(page.getByText(/hello/i).first()).toBeVisible();
 
-  // Start the drafter.
-  await page.getByRole('button', { name: /draft a dispute/i }).click();
+  // Start the drafter via the Quick Actions grid.
+  await page.getByRole('button', { name: /draft dispute/i }).click();
 
   // Step 1 — challan details.
   await page.getByLabel(/vehicle number/i).fill('DL3CAB1234');
