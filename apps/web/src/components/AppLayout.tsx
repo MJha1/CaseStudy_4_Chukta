@@ -11,8 +11,10 @@ const TABS = [
 
 export function AppLayout() {
   const location = useLocation();
-  // The drafter is a focused full-screen flow — hide the tab bar there.
-  const hideNav = location.pathname.startsWith('/dispute/new');
+  // Focused full-screen flows hide the tab bar.
+  const hideNav =
+    location.pathname.startsWith('/dispute/new') ||
+    location.pathname.startsWith('/vehicles/new');
 
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-[440px] flex-col bg-bg shadow-black/5 sm:my-4 sm:min-h-[calc(100dvh-2rem)] sm:rounded-[2rem] sm:shadow-2xl sm:ring-1 sm:ring-line">

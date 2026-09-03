@@ -56,7 +56,6 @@ async function main() {
         location: 'NH-48, Gurugram',
         city: 'Gurugram',
         evidenceNote: 'Weighbridge — goods carrier',
-        flag: 'classMismatch', // offence implies GOODS, vehicle is LMV
         isSample: true,
       },
     ],
@@ -83,7 +82,6 @@ async function main() {
       date: daysAgo(40), // after the sale date
       location: 'Sector 29, Gurugram',
       city: 'Gurugram',
-      flag: 'sold',
       isSample: true,
     },
   });
@@ -120,7 +118,6 @@ async function main() {
         date: daysAgo(15), // duplicate of the above
         location: 'Mumbai-Pune Expressway',
         city: 'Pune',
-        flag: 'duplicate',
         isSample: true,
       },
     ],

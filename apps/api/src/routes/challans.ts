@@ -1,23 +1,28 @@
 import { Router } from 'express';
 import { prisma } from '@chukta/db';
-import { createChallanSchema } from '@chukta/shared';
+import { createChallanSchema, flagChallans } from '@chukta/shared';
 import { validateBody } from '../validate.js';
 import { SAMPLE_DEVICE_ID } from '../deviceId.js';
-import { toChallan } from '../mappers.js';
+import { toChallan, toVehicle } from '../mappers.js';
 
 export const challansRouter = Router();
 
 // List the device's challans plus sample challans, optionally by vehicle.
+// Flags are computed live from the F4 heuristics engine, not read from storage.
 challansRouter.get('/', async (req, res) => {
   const vehicleId = typeof req.query.vehicleId === 'string' ? req.query.vehicleId : undefined;
-  const rows = await prisma.challan.findMany({
-    where: {
-      deviceId: { in: [req.deviceId, SAMPLE_DEVICE_ID] },
-      ...(vehicleId ? { vehicleId } : {}),
-    },
-    orderBy: { date: 'desc' },
-  });
-  res.json(rows.map(toChallan));
+  const [vehicleRows, challanRows] = await Promise.all([
+    prisma.vehicle.findMany({ where: { deviceId: { in: [req.deviceId, SAMPLE_DEVICE_ID] } } }),
+    prisma.challan.findMany({
+      where: {
+        deviceId: { in: [req.deviceId, SAMPLE_DEVICE_ID] },
+        ...(vehicleId ? { vehicleId } : {}),
+      },
+      orderBy: { date: 'desc' },
+    }),
+  ]);
+  const flagged = flagChallans(vehicleRows.map(toVehicle), challanRows.map(toChallan));
+  res.json(flagged);
 });
 
 // Add a challan to a vehicle (must be one the device owns).

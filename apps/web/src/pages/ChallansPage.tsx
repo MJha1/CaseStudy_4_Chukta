@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AlertTriangle, Gavel } from 'lucide-react';
+import { AlertTriangle, Gavel, Plus, Car } from 'lucide-react';
 import {
   prettyDate,
+  flagLabel,
+  flagToGround,
   type Challan,
   type Vehicle,
-  type ChallanFlag,
   type ChallanStatus,
-  type GroundKey,
 } from '@chukta/shared';
 import { Card, CardBody } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -22,18 +22,6 @@ const STATUS_TONE: Record<ChallanStatus, 'neutral' | 'warn' | 'danger' | 'ok'> =
   due: 'warn',
   overdue: 'danger',
   paid: 'ok',
-};
-
-const FLAG_LABEL: Record<ChallanFlag, string> = {
-  classMismatch: 'Likely wrong — vehicle class mismatch',
-  sold: 'Issued after you sold this vehicle',
-  duplicate: 'Duplicate of another challan',
-};
-
-const FLAG_GROUND: Record<ChallanFlag, GroundKey> = {
-  classMismatch: 'wrongvehicle',
-  sold: 'sold',
-  duplicate: 'duplicate',
 };
 
 export function ChallansPage() {
@@ -68,7 +56,7 @@ export function ChallansPage() {
       city: c.city ?? '',
       location: c.location ?? '',
       offence: c.offence,
-      ground: c.flag ? FLAG_GROUND[c.flag] : undefined,
+      ground: c.flag ? flagToGround[c.flag] : undefined,
     };
     navigate('/dispute/new', { state: { prefill } });
   }
@@ -76,6 +64,12 @@ export function ChallansPage() {
   return (
     <div>
       <PageHeader title="Challans" subtitle="Every fine on your vehicles, wrong ones flagged." />
+
+      <div className="px-4 pb-3">
+        <Button variant="outline" size="block" onClick={() => navigate('/vehicles/new')}>
+          <Plus className="size-4" /> Add vehicle
+        </Button>
+      </div>
 
       <div className="space-y-3 px-4 pb-4">
         {challans.map((c) => {
@@ -107,7 +101,7 @@ export function ChallansPage() {
                 {c.flag && (
                   <div className="flex items-start gap-2 rounded-xl bg-warn-soft p-2.5">
                     <AlertTriangle className="mt-0.5 size-4 shrink-0 text-warn" />
-                    <p className="text-[12px] font-semibold text-warn">{FLAG_LABEL[c.flag]}</p>
+                    <p className="text-[12px] font-semibold text-warn">{flagLabel[c.flag]}</p>
                   </div>
                 )}
 
@@ -127,7 +121,20 @@ export function ChallansPage() {
 
         {loading && <p className="py-8 text-center text-sm text-muted">Loading…</p>}
         {!loading && challans.length === 0 && (
-          <p className="py-8 text-center text-sm text-muted">No challans yet.</p>
+          <Card>
+            <CardBody className="flex flex-col items-center py-10 text-center">
+              <div className="mb-3 flex size-14 items-center justify-center rounded-full bg-brand-soft">
+                <Car className="size-7 text-brand" />
+              </div>
+              <p className="text-base font-bold text-ink">No challans yet</p>
+              <p className="mb-4 mt-1 max-w-[220px] text-[13px] text-muted">
+                Add a vehicle to enter challans or try the auto-fetch demo.
+              </p>
+              <Button onClick={() => navigate('/vehicles/new')}>
+                <Plus className="size-4" /> Add vehicle
+              </Button>
+            </CardBody>
+          </Card>
         )}
       </div>
     </div>

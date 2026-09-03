@@ -117,7 +117,15 @@ export function HomePage() {
 
         {/* Vehicles */}
         <div className="pt-2">
-          <p className="mb-2 px-1 text-[13px] font-bold text-ink">Your vehicles</p>
+          <div className="mb-2 flex items-center justify-between px-1">
+            <p className="text-[13px] font-bold text-ink">Your vehicles</p>
+            <button
+              onClick={() => navigate('/vehicles/new')}
+              className="inline-flex items-center gap-1 text-[13px] font-semibold text-brand"
+            >
+              <Plus className="size-4" /> Add
+            </button>
+          </div>
           <div className="space-y-2.5">
             {byVehicle.map(({ vehicle, count, outstanding, overdue, flagged }) => (
               <button
@@ -159,7 +167,10 @@ export function HomePage() {
         </div>
 
         {/* Auto-fetch preview (F6) teaser */}
-        <div className="mt-1 flex items-center gap-3 rounded-2xl border border-dashed border-line p-3.5">
+        <button
+          onClick={() => navigate('/vehicles/new')}
+          className="mt-1 flex w-full items-center gap-3 rounded-2xl border border-dashed border-line p-3.5 text-left hover:border-brand/40"
+        >
           <Sparkles className="size-5 shrink-0 text-brand" />
           <div className="flex-1">
             <p className="text-[13px] font-semibold text-ink">Auto-fetch all challans</p>
@@ -167,8 +178,8 @@ export function HomePage() {
               Preview — a live version fetches from VAHAN/mParivahan with your consent.
             </p>
           </div>
-          <Badge tone="warn">Soon</Badge>
-        </div>
+          <Badge tone="warn">Demo</Badge>
+        </button>
       </div>
     </div>
   );
