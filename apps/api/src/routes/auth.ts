@@ -42,15 +42,22 @@ authRouter.post('/google', validateBody(googleAuthRequestSchema), async (req, re
     update: { email: profile.email, name: profile.name, picture: profile.picture },
   });
 
-  // Claim the guest device's rows into this account (so nothing is lost on sign-in).
+  // Claim the guest device's REAL rows into this account (so nothing the user
+  // created is lost on sign-in). Demo/sample rows are an exploration aid — they
+  // are discarded rather than moved into a real account, so a signed-in user
+  // never sees dummy data as their own.
   const deviceId = req.body.deviceId?.trim();
   if (deviceId) {
-    const where = { deviceId, userId: null };
-    const data = { userId: user.id, deviceId: null };
+    const guest = { deviceId, userId: null };
+    const claim = { userId: user.id, deviceId: null };
     await prisma.$transaction([
-      prisma.vehicle.updateMany({ where, data }),
-      prisma.challan.updateMany({ where, data }),
-      prisma.dispute.updateMany({ where, data }),
+      // Drop demo rows first (challans before vehicles for the foreign key).
+      prisma.challan.deleteMany({ where: { ...guest, isSample: true } }),
+      prisma.vehicle.deleteMany({ where: { ...guest, isSample: true } }),
+      // Claim the guest's real rows only.
+      prisma.vehicle.updateMany({ where: { ...guest, isSample: false }, data: claim }),
+      prisma.challan.updateMany({ where: { ...guest, isSample: false }, data: claim }),
+      prisma.dispute.updateMany({ where: guest, data: claim }),
     ]);
   }
 

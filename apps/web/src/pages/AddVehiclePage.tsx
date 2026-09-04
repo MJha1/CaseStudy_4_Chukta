@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft, Plus, Sparkles, Check, AlertTriangle, Search } from 'lucide-react';
 import {
   prettyDate,
@@ -25,9 +25,11 @@ const CLASSES: { value: VehicleClass; label: string }[] = [
 
 export function AddVehiclePage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const prefilledPlate = ((location.state as { plate?: string } | null)?.plate ?? '').toUpperCase();
   const toast = useToast();
 
-  const [plate, setPlate] = useState('');
+  const [plate, setPlate] = useState(prefilledPlate);
   const [model, setModel] = useState('');
   const [vehicleClass, setVehicleClass] = useState<VehicleClass>('LMV');
   const [soldDate, setSoldDate] = useState('');

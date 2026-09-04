@@ -55,3 +55,31 @@ test('H6 — quick actions navigate to their destinations', async ({ page }) => 
   await page.getByRole('button', { name: /^draft dispute$/i }).click();
   await expect(page).toHaveURL(/\/dispute\/new/);
 });
+
+test('H9 — search submits: known plate opens it, unknown plate starts an add', async ({ page }) => {
+  await enterAsGuest(page);
+  await loadDemoData(page);
+  const search = page.getByPlaceholder(/search by vehicle no/i);
+
+  // A plate in the garage → opens that vehicle.
+  await search.fill('DL3CAB1234');
+  await page.getByRole('button', { name: 'Search' }).click();
+  await expect(page.getByText('Vehicle Details')).toBeVisible();
+
+  // A plate that isn't in the garage → Add vehicle, prefilled with it.
+  await page.goto('/');
+  await search.fill('KA09XY7777');
+  await page.getByRole('button', { name: 'Search' }).click();
+  await expect(page).toHaveURL(/\/vehicles\/new/);
+  await expect(page.getByLabel(/registration number/i)).toHaveValue('KA09XY7777');
+});
+
+test('H10 — the bell opens live notifications derived from the data', async ({ page }) => {
+  await enterAsGuest(page);
+  await loadDemoData(page);
+  await page.getByRole('button', { name: 'Notifications' }).click();
+
+  await expect(page.getByText('Notifications')).toBeVisible(); // panel header
+  await expect(page.getByText(/Overdue — licence at risk/i).first()).toBeVisible(); // overdue alert
+  await expect(page.getByText(/worth disputing/i).first()).toBeVisible(); // flagged alert
+});

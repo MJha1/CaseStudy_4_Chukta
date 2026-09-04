@@ -13,8 +13,8 @@ vi.mock('../auth/session.js', () => ({
 vi.mock('@chukta/db', () => ({
   prisma: {
     user: { upsert: vi.fn(), findUnique: vi.fn() },
-    vehicle: { updateMany: vi.fn() },
-    challan: { updateMany: vi.fn() },
+    vehicle: { updateMany: vi.fn(), deleteMany: vi.fn() },
+    challan: { updateMany: vi.fn(), deleteMany: vi.fn() },
     dispute: { updateMany: vi.fn() },
     $transaction: vi.fn(async (ops: unknown[]) => ops),
   },
@@ -52,10 +52,17 @@ describe('POST /api/auth/google', () => {
     expect(res.status).toBe(200);
     expect(res.body.token).toBe('sess.user-1');
     expect(res.body.user).toMatchObject({ id: 'user-1', email: 'a@example.com', name: 'Asha' });
-    // Guest data was claimed into the account.
+    // Real guest data was claimed into the account…
     expect(prisma.vehicle.updateMany).toHaveBeenCalledWith({
-      where: { deviceId: 'dev-1', userId: null },
+      where: { deviceId: 'dev-1', userId: null, isSample: false },
       data: { userId: 'user-1', deviceId: null },
+    });
+    // …while demo/sample rows were discarded, not migrated.
+    expect(prisma.vehicle.deleteMany).toHaveBeenCalledWith({
+      where: { deviceId: 'dev-1', userId: null, isSample: true },
+    });
+    expect(prisma.challan.deleteMany).toHaveBeenCalledWith({
+      where: { deviceId: 'dev-1', userId: null, isSample: true },
     });
   });
 

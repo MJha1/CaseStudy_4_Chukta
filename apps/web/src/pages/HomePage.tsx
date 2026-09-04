@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Bell,
   Search,
-  ScanLine,
+  ArrowRight,
   ShieldCheck,
   AlertTriangle,
   Plus,
@@ -16,12 +16,14 @@ import {
   FileText,
   Moon,
   Sun,
+  X,
+  BellOff,
   Lock,
   BadgeCheck,
   BadgePercent,
 } from 'lucide-react';
 import { SignInIcon } from '@/components/icons/SignInIcon';
-import { daysLeft, type Challan, type Vehicle } from '@chukta/shared';
+import { daysLeft, flagLabel, type Challan, type Vehicle } from '@chukta/shared';
 import { Card, CardBody } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { listVehicles, listChallans, loadDemo } from '@/lib/api';
@@ -41,6 +43,13 @@ const QUICK_ACTIONS = [
   { label: 'Chukta Pro', icon: Sparkles, to: '/pro' },
 ];
 
+type Notif = {
+  id: string;
+  tone: 'danger' | 'warn' | 'brand';
+  title: string;
+  detail: string;
+};
+
 export function HomePage() {
   const navigate = useNavigate();
   const toast = useToast();
@@ -51,6 +60,7 @@ export function HomePage() {
   const [loading, setLoading] = useState(true);
   const [demoBusy, setDemoBusy] = useState(false);
   const [query, setQuery] = useState('');
+  const [notifOpen, setNotifOpen] = useState(false);
 
   const load = useCallback(() => {
     return Promise.all([listVehicles(), listChallans()])
@@ -78,6 +88,16 @@ export function HomePage() {
     } finally {
       setDemoBusy(false);
     }
+  }
+
+  // Search: open the matching garage vehicle, or start adding it (prefilled) so
+  // the user can fetch its challans — fulfilling "find challans on any vehicle".
+  function runSearch() {
+    const q = query.trim().toUpperCase().replace(/\s+/g, '');
+    if (!q) return;
+    const match = vehicles.find((v) => v.plate.replace(/\s+/g, '').includes(q));
+    if (match) navigate(`/vehicles/${match.id}`);
+    else navigate('/vehicles/new', { state: { plate: q } });
   }
 
   const stats = useMemo(() => {
@@ -116,6 +136,45 @@ export function HomePage() {
       .slice(0, 3);
   }, [challans, vehicles]);
 
+  // Live notifications derived from the user's own challans (no push infra):
+  // overdue (licence risk) → due-soon → likely-wrong. Recomputed on every load.
+  const notifications = useMemo<Notif[]>(() => {
+    const plateOf = new Map(vehicles.map((v) => [v.id, v.plate]));
+    const list: Notif[] = [];
+    for (const c of challans) {
+      if (c.status === 'paid') continue;
+      const plate = plateOf.get(c.vehicleId) ?? '';
+      if (c.status === 'overdue') {
+        list.push({
+          id: `od-${c.id}`,
+          tone: 'danger',
+          title: 'Overdue — licence at risk',
+          detail: `${c.offence} on ${plate} · ₹${inr(c.amount)}`,
+        });
+      } else {
+        const left = daysLeft(c.date);
+        if (left >= 0 && left < 15) {
+          list.push({
+            id: `due-${c.id}`,
+            tone: 'warn',
+            title: `Due in ${left} day${left === 1 ? '' : 's'}`,
+            detail: `${c.offence} on ${plate}`,
+          });
+        }
+      }
+      if (c.flag) {
+        list.push({
+          id: `fl-${c.id}`,
+          tone: 'brand',
+          title: 'Likely wrong — worth disputing',
+          detail: `${flagLabel[c.flag]} · ₹${inr(c.amount)} on ${plate}`,
+        });
+      }
+    }
+    const rank = { danger: 0, warn: 1, brand: 2 };
+    return list.sort((a, b) => rank[a.tone] - rank[b.tone]);
+  }, [challans, vehicles]);
+
   return (
     <div>
       {/* Header */}
@@ -136,9 +195,13 @@ export function HomePage() {
             >
               {theme === 'dark' ? <Sun className="size-[17px]" /> : <Moon className="size-[17px]" />}
             </button>
-            <button className="relative flex size-8 items-center justify-center rounded-full text-ink transition-colors hover:bg-bg">
+            <button
+              onClick={() => setNotifOpen(true)}
+              aria-label="Notifications"
+              className="relative flex size-8 items-center justify-center rounded-full text-ink transition-colors hover:bg-bg"
+            >
               <Bell className="size-[17px]" />
-              {stats.anyOverdue && (
+              {notifications.length > 0 && (
                 <span className="absolute right-1.5 top-1.5 size-2 rounded-full bg-danger ring-2 ring-paper" />
               )}
             </button>
@@ -179,22 +242,30 @@ export function HomePage() {
       {/* Hero — finding challans on a vehicle is the primary job of this screen. */}
       <div className="px-4 pb-3 pt-2">
         <p className="mb-2 text-[13px] font-semibold text-muted">Find challans on any vehicle</p>
-        <div className="flex items-center gap-2.5 rounded-2xl border border-line bg-paper px-4 py-3.5 shadow-sm transition-shadow focus-within:border-brand/50 focus-within:shadow-md">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            runSearch();
+          }}
+          className="flex items-center gap-2.5 rounded-2xl border border-line bg-paper px-4 py-3.5 shadow-sm transition-shadow focus-within:border-brand/50 focus-within:shadow-md"
+        >
           <Search className="size-5 shrink-0 text-brand" />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value.toUpperCase())}
             placeholder="Search by vehicle no."
+            enterKeyHint="search"
             className="tabular flex-1 bg-transparent text-[16px] font-semibold text-ink placeholder:font-sans placeholder:text-[15px] placeholder:font-normal placeholder:text-muted/80 focus:outline-none"
           />
           <button
-            onClick={() => navigate('/vehicles/new')}
-            aria-label="Add / scan vehicle"
-            className="flex size-9 shrink-0 items-center justify-center rounded-full bg-brand-soft text-brand"
+            type="submit"
+            disabled={!query.trim()}
+            aria-label="Search"
+            className="flex size-9 shrink-0 items-center justify-center rounded-full bg-brand text-white transition-opacity disabled:opacity-40"
           >
-            <ScanLine className="size-[18px]" />
+            <ArrowRight className="size-[18px]" />
           </button>
-        </div>
+        </form>
       </div>
 
       {/* Hero stat pair — the money at stake, promoted above the garage. */}
@@ -269,8 +340,8 @@ export function HomePage() {
               </div>
               <p className="text-[15px] font-bold text-ink">No vehicles yet</p>
               <p className="mb-4 mt-1 max-w-[240px] text-[13px] text-muted">
-                Add your first vehicle and we'll track every challan on it — or load demo data to
-                see how Chukta works.
+                Add your first vehicle and we'll track every challan on it
+                {status !== 'signedin' ? ' — or load demo data to see how Chukta works.' : '.'}
               </p>
               <div className="flex flex-col items-center gap-2">
                 <button
@@ -279,13 +350,15 @@ export function HomePage() {
                 >
                   <Plus className="size-4" /> Add vehicle
                 </button>
-                <button
-                  onClick={handleLoadDemo}
-                  disabled={demoBusy}
-                  className="text-[13px] font-semibold text-muted hover:text-ink"
-                >
-                  {demoBusy ? 'Loading…' : 'Load demo data'}
-                </button>
+                {status !== 'signedin' && (
+                  <button
+                    onClick={handleLoadDemo}
+                    disabled={demoBusy}
+                    className="text-[13px] font-semibold text-muted hover:text-ink"
+                  >
+                    {demoBusy ? 'Loading…' : 'Load demo data'}
+                  </button>
+                )}
               </div>
             </CardBody>
           </Card>
@@ -394,6 +467,79 @@ export function HomePage() {
           </Card>
         </section>
       )}
+
+      {notifOpen && (
+        <NotificationsSheet
+          items={notifications}
+          onClose={() => setNotifOpen(false)}
+          onSelect={() => {
+            setNotifOpen(false);
+            navigate('/challans');
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+const NOTIF_DOT: Record<Notif['tone'], string> = {
+  danger: 'bg-danger',
+  warn: 'bg-warn',
+  brand: 'bg-brand',
+};
+
+function NotificationsSheet({
+  items,
+  onClose,
+  onSelect,
+}: {
+  items: Notif[];
+  onClose: () => void;
+  onSelect: (n: Notif) => void;
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-ink/40 p-0 sm:items-center sm:p-4"
+      onClick={onClose}
+    >
+      <div
+        className="flex max-h-[75dvh] w-full max-w-[440px] flex-col rounded-t-2xl bg-paper sm:rounded-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between border-b border-line px-4 py-3">
+          <p className="text-sm font-bold text-ink">Notifications</p>
+          <button onClick={onClose} aria-label="Close" className="text-muted hover:text-ink">
+            <X className="size-5" />
+          </button>
+        </div>
+        {items.length === 0 ? (
+          <div className="flex flex-col items-center gap-2 px-6 py-14 text-center">
+            <div className="flex size-12 items-center justify-center rounded-full bg-brand-soft">
+              <BellOff className="size-6 text-brand" />
+            </div>
+            <p className="text-[14px] font-semibold text-ink">You're all clear</p>
+            <p className="max-w-[240px] text-[12.5px] text-muted">
+              No overdue, upcoming or flagged challans right now.
+            </p>
+          </div>
+        ) : (
+          <div className="divide-y divide-line overflow-y-auto">
+            {items.map((n) => (
+              <button
+                key={n.id}
+                onClick={() => onSelect(n)}
+                className="flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-bg"
+              >
+                <span className={`mt-1.5 size-2 shrink-0 rounded-full ${NOTIF_DOT[n.tone]}`} />
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[13px] font-semibold text-ink">{n.title}</span>
+                  <span className="tabular block truncate text-[12px] text-muted">{n.detail}</span>
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

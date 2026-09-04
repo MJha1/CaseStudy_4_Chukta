@@ -29,6 +29,7 @@ import { listVehicles, listChallans, loadDemo } from '@/lib/api';
 import { track } from '@/lib/analytics';
 import { useRefreshOnFocus } from '@/lib/useRefreshOnFocus';
 import { useToast } from '@/components/Toast';
+import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 import type { DraftState } from '@/components/drafter/draft';
 
@@ -58,6 +59,7 @@ export function ChallansPage() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [challans, setChallans] = useState<Challan[]>([]);
   const [loading, setLoading] = useState(true);
+  const { status } = useAuth();
   const [demoBusy, setDemoBusy] = useState(false);
   const [tab, setTab] = useState<TabKey>('pending');
 
@@ -252,16 +254,18 @@ export function ChallansPage() {
               </div>
               <p className="text-base font-bold text-ink">No challans yet</p>
               <p className="mb-4 mt-1 max-w-[240px] text-[13px] text-muted">
-                Add a vehicle and we'll surface every fine on it — or load demo data to see how
-                Chukta works.
+                Add a vehicle and we'll surface every fine on it
+                {status !== 'signedin' ? ' — or load demo data to see how Chukta works.' : '.'}
               </p>
               <div className="flex flex-col items-center gap-2">
                 <Button onClick={() => navigate('/vehicles/new')}>
                   <Plus className="size-4" /> Add vehicle
                 </Button>
-                <Button variant="ghost" onClick={handleLoadDemo} disabled={demoBusy}>
-                  {demoBusy ? 'Loading…' : 'Load demo data'}
-                </Button>
+                {status !== 'signedin' && (
+                  <Button variant="ghost" onClick={handleLoadDemo} disabled={demoBusy}>
+                    {demoBusy ? 'Loading…' : 'Load demo data'}
+                  </Button>
+                )}
               </div>
             </CardBody>
           </Card>
