@@ -16,6 +16,9 @@ import {
   FileText,
   Moon,
   Sun,
+  Lock,
+  BadgeCheck,
+  BadgePercent,
 } from 'lucide-react';
 import { SignInIcon } from '@/components/icons/SignInIcon';
 import { daysLeft, type Challan, type Vehicle } from '@chukta/shared';
@@ -123,20 +126,24 @@ export function HomePage() {
           </div>
           <span className="text-[17px] font-extrabold tracking-tight text-ink">Chukta</span>
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={toggle}
-            aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-            className="flex size-9 items-center justify-center rounded-full bg-paper text-ink ring-1 ring-line"
-          >
-            {theme === 'dark' ? <Sun className="size-[18px]" /> : <Moon className="size-[18px]" />}
-          </button>
-          <button className="relative flex size-9 items-center justify-center rounded-full bg-paper text-ink ring-1 ring-line">
-            <Bell className="size-[18px]" />
-            {stats.anyOverdue && (
-              <span className="absolute right-2 top-2 size-2 rounded-full bg-danger" />
-            )}
-          </button>
+        <div className="flex items-center gap-2.5">
+          {/* Utility cluster — theme + notifications read as one quiet unit. */}
+          <div className="flex items-center gap-0.5 rounded-full bg-paper p-0.5 ring-1 ring-line">
+            <button
+              onClick={toggle}
+              aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+              className="flex size-8 items-center justify-center rounded-full text-ink transition-colors hover:bg-bg"
+            >
+              {theme === 'dark' ? <Sun className="size-[17px]" /> : <Moon className="size-[17px]" />}
+            </button>
+            <button className="relative flex size-8 items-center justify-center rounded-full text-ink transition-colors hover:bg-bg">
+              <Bell className="size-[17px]" />
+              {stats.anyOverdue && (
+                <span className="absolute right-1.5 top-1.5 size-2 rounded-full bg-danger ring-2 ring-paper" />
+              )}
+            </button>
+          </div>
+          {/* Identity — visually distinct from the utility cluster above. */}
           {status === 'signedin' ? (
             <button
               onClick={() => navigate('/profile')}
@@ -153,10 +160,10 @@ export function HomePage() {
             <button
               onClick={backToSignIn}
               aria-label="Sign in"
-              title="Sign in"
-              className="flex size-9 items-center justify-center rounded-full bg-brand-soft text-brand"
+              className="flex h-9 items-center gap-1.5 rounded-full bg-brand-soft pl-2.5 pr-3 text-[13px] font-semibold text-brand"
             >
-              <SignInIcon className="size-[22px]" />
+              <SignInIcon className="size-[18px]" />
+              Sign in
             </button>
           )}
         </div>
@@ -169,40 +176,76 @@ export function HomePage() {
         <p className="text-[13px] text-muted">Manage your vehicles and clear your challans.</p>
       </div>
 
-      {/* Search */}
-      <div className="px-4 pb-3">
-        <div className="flex items-center gap-2 rounded-2xl border border-line bg-paper px-3.5 py-3">
-          <Search className="size-[18px] text-muted" />
+      {/* Hero — finding challans on a vehicle is the primary job of this screen. */}
+      <div className="px-4 pb-3 pt-2">
+        <p className="mb-2 text-[13px] font-semibold text-muted">Find challans on any vehicle</p>
+        <div className="flex items-center gap-2.5 rounded-2xl border border-line bg-paper px-4 py-3.5 shadow-sm transition-shadow focus-within:border-brand/50 focus-within:shadow-md">
+          <Search className="size-5 shrink-0 text-brand" />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value.toUpperCase())}
             placeholder="Search by vehicle no."
-            className="tabular flex-1 bg-transparent text-[15px] text-ink placeholder:font-sans placeholder:text-muted/80 focus:outline-none"
+            className="tabular flex-1 bg-transparent text-[16px] font-semibold text-ink placeholder:font-sans placeholder:text-[15px] placeholder:font-normal placeholder:text-muted/80 focus:outline-none"
           />
           <button
             onClick={() => navigate('/vehicles/new')}
             aria-label="Add / scan vehicle"
-            className="text-brand"
+            className="flex size-9 shrink-0 items-center justify-center rounded-full bg-brand-soft text-brand"
           >
-            <ScanLine className="size-[19px]" />
+            <ScanLine className="size-[18px]" />
           </button>
         </div>
       </div>
+
+      {/* Hero stat pair — the money at stake, promoted above the garage. */}
+      {vehicles.length > 0 && (
+        <div className="grid grid-cols-2 gap-2.5 px-4 pb-3">
+          <div className="rounded-2xl border border-line bg-paper p-4">
+            <p className="text-[12px] font-semibold text-muted">Outstanding</p>
+            <p
+              className={`tabular mt-1 text-[26px] font-extrabold leading-none ${
+                stats.anyOverdue ? 'text-danger' : 'text-ink'
+              }`}
+            >
+              ₹{inr(stats.outstanding)}
+            </p>
+          </div>
+          <div className="rounded-2xl border border-brand/25 bg-brand-soft p-4">
+            <p className="text-[12px] font-semibold text-brand-dark">Disputable</p>
+            <p className="tabular mt-1 text-[26px] font-extrabold leading-none text-brand">
+              ₹{inr(stats.disputable)}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* DL-risk banner */}
       {stats.anyOverdue && (
         <div className="mx-4 mb-3 flex items-start gap-3 rounded-2xl bg-danger-soft p-3.5">
           <AlertTriangle className="mt-0.5 size-5 shrink-0 text-danger" />
-          <div>
+          <div className="min-w-0 flex-1">
             <p className="text-[13px] font-bold text-danger">
               {stats.overdue} overdue — licence at risk
             </p>
             <p className="text-[12px] text-danger/80">
               Past 60 days fines escalate toward DL suspension. Pay valid ones, dispute the wrong.
             </p>
+            <button
+              onClick={() => navigate('/challans')}
+              className="mt-2.5 inline-flex h-8 items-center gap-1 rounded-full bg-danger px-3.5 text-[12.5px] font-semibold text-white transition-opacity hover:opacity-90"
+            >
+              Review &amp; dispute <ChevronRight className="size-3.5" />
+            </button>
           </div>
         </div>
       )}
+
+      {/* Trust strip — the differentiator, kept small and quiet. */}
+      <div className="mx-4 mb-4 grid grid-cols-3 gap-1.5 rounded-2xl bg-paper px-2.5 py-3 ring-1 ring-line">
+        <TrustPoint icon={BadgeCheck} text="Only pay when a wrong fine is cancelled" />
+        <TrustPoint icon={Lock} text="Your evidence never leaves your phone" />
+        <TrustPoint icon={BadgePercent} text="Never a cut of a valid fine" />
+      </div>
 
       {/* My Garage */}
       <section className="px-4">
@@ -226,7 +269,8 @@ export function HomePage() {
               </div>
               <p className="text-[15px] font-bold text-ink">No vehicles yet</p>
               <p className="mb-4 mt-1 max-w-[240px] text-[13px] text-muted">
-                Add your vehicle to track and dispute its challans — or load demo data to explore.
+                Add your first vehicle and we'll track every challan on it — or load demo data to
+                see how Chukta works.
               </p>
               <div className="flex flex-col items-center gap-2">
                 <button
@@ -290,15 +334,6 @@ export function HomePage() {
           ))}
         </div>
       </section>
-
-      {/* Status row */}
-      {vehicles.length > 0 && (
-        <section className="grid grid-cols-3 gap-2.5 px-4 pt-4">
-          <StatCard label="Outstanding" value={`₹${inr(stats.outstanding)}`} tone={stats.anyOverdue ? 'danger' : 'ink'} />
-          <StatCard label="Disputable" value={`₹${inr(stats.disputable)}`} tone="brand" />
-          <StatCard label="Overdue" value={String(stats.overdue)} tone={stats.overdue ? 'warn' : 'ink'} />
-        </section>
-      )}
 
       {/* Quick Actions */}
       <section className="px-4 pt-5">
@@ -381,27 +416,17 @@ function cnAmount(overdue: boolean): string {
   return `tabular ml-auto text-[14px] font-bold ${overdue ? 'text-danger' : 'text-ink'}`;
 }
 
-function StatCard({
-  label,
-  value,
-  tone,
+function TrustPoint({
+  icon: Icon,
+  text,
 }: {
-  label: string;
-  value: string;
-  tone: 'ink' | 'brand' | 'warn' | 'danger';
+  icon: typeof ShieldCheck;
+  text: string;
 }) {
-  const color =
-    tone === 'brand'
-      ? 'text-brand'
-      : tone === 'warn'
-        ? 'text-warn'
-        : tone === 'danger'
-          ? 'text-danger'
-          : 'text-ink';
   return (
-    <div className="rounded-2xl border border-line bg-paper p-3">
-      <p className="text-[11px] font-semibold text-muted">{label}</p>
-      <p className={`tabular mt-1 text-[17px] font-extrabold ${color}`}>{value}</p>
+    <div className="flex flex-col items-center gap-1 text-center">
+      <Icon className="size-4 text-brand" />
+      <p className="text-[10.5px] leading-tight text-muted">{text}</p>
     </div>
   );
 }

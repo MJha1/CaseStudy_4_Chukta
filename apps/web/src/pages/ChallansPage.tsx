@@ -252,7 +252,8 @@ export function ChallansPage() {
               </div>
               <p className="text-base font-bold text-ink">No challans yet</p>
               <p className="mb-4 mt-1 max-w-[240px] text-[13px] text-muted">
-                Add a vehicle to enter or fetch challans — or load demo data to explore.
+                Add a vehicle and we'll surface every fine on it — or load demo data to see how
+                Chukta works.
               </p>
               <div className="flex flex-col items-center gap-2">
                 <Button onClick={() => navigate('/vehicles/new')}>

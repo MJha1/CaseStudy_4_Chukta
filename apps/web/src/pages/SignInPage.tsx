@@ -37,7 +37,7 @@ export function SignInPage() {
               />
             </div>
           ) : (
-            <p className="rounded-xl bg-warn-soft px-3 py-2 text-[12px] font-semibold text-warn">
+            <p className="rounded-xl bg-paper px-3 py-2 text-[12px] font-medium text-muted ring-1 ring-line">
               Google sign-in isn't configured on this deployment.
             </p>
           )}
