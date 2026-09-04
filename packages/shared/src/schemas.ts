@@ -175,6 +175,8 @@ export type FetchChallansResponse = z.infer<typeof fetchChallansResponseSchema>;
 
 export const fetchChallansRequestSchema = z.object({
   providerId: z.string().min(1),
+  /** Explicit customer consent — required by live providers (e.g. InstantPay). */
+  consent: z.boolean().optional(),
 });
 export type FetchChallansRequest = z.infer<typeof fetchChallansRequestSchema>;
 

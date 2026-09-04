@@ -36,6 +36,7 @@ export function AddVehiclePage() {
 
   const [providers, setProviders] = useState<ProviderInfo[]>([]);
   const [providerId, setProviderId] = useState<string>('');
+  const [consent, setConsent] = useState(false);
   const [fetched, setFetched] = useState<FetchChallansResponse | null>(null);
   const [fetchedVehicleId, setFetchedVehicleId] = useState<string>('');
 
@@ -47,6 +48,9 @@ export function AddVehiclePage() {
       })
       .catch(() => {});
   }, []);
+
+  const selectedProvider = providers.find((p) => p.id === providerId);
+  const isLive = !!selectedProvider && !selectedProvider.simulated;
 
   function validate(): boolean {
     if (plate.replace(/\s+/g, '').length < 6) {
@@ -87,7 +91,7 @@ export function AddVehiclePage() {
     try {
       const vehicle = await makeVehicle();
       track('vehicle_added', { source: 'autofetch', provider: providerId });
-      const result = await fetchVehicleChallans(vehicle.id, providerId);
+      const result = await fetchVehicleChallans(vehicle.id, providerId, isLive ? consent : undefined);
       setFetchedVehicleId(vehicle.id);
       setFetched(result);
     } catch (e) {
@@ -233,11 +237,25 @@ export function AddVehiclePage() {
                     </button>
                   ))}
                 </div>
+                {isLive && (
+                  <label className="flex items-start gap-2.5 rounded-xl bg-brand-soft p-3 text-[12px] text-brand-dark">
+                    <input
+                      type="checkbox"
+                      checked={consent}
+                      onChange={(e) => setConsent(e.target.checked)}
+                      className="mt-0.5 size-4 accent-brand"
+                    />
+                    <span>
+                      I consent to {selectedProvider?.name} looking up this vehicle's challans on my
+                      behalf, from official VAHAN/mParivahan sources.
+                    </span>
+                  </label>
+                )}
                 <Button
                   variant="secondary"
                   size="block"
                   onClick={fetchFromProvider}
-                  disabled={busy || !providerId}
+                  disabled={busy || !providerId || (isLive && !consent)}
                 >
                   <Search className="size-4" /> {busy ? 'Fetching…' : 'Fetch challans'}
                 </Button>

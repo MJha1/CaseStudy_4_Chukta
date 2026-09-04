@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { buildRealProvider, mapEchallanResponse } from './real.js';
+import { buildEchallanProvider, mapEchallanResponse } from './real.js';
 import { listProviderInfo, resetProviderCache } from './registry.js';
 
 const ENV_KEYS = ['CHALLAN_PROVIDER_KEY', 'CHALLAN_PROVIDER_URL', 'CHALLAN_PROVIDER_NAME'] as const;
@@ -53,15 +53,14 @@ describe('mapEchallanResponse', () => {
   });
 });
 
-describe('buildRealProvider activation', () => {
+describe('buildEchallanProvider activation', () => {
   it('is absent without an API key', () => {
-    expect(buildRealProvider()).toBeNull();
+    expect(buildEchallanProvider()).toBeNull();
   });
 
   it('activates on the key as a non-simulated "Live" provider', () => {
     process.env.CHALLAN_PROVIDER_KEY = 'test-key';
-    const provider = buildRealProvider();
-    expect(provider?.info).toMatchObject({ id: 'echallan', simulated: false });
+    expect(buildEchallanProvider()?.info).toMatchObject({ id: 'echallan', simulated: false });
   });
 
   it('sorts first in the registry ahead of the demo vendors', () => {
@@ -83,8 +82,7 @@ describe('fetchByPlate (mocked network)', () => {
     });
     vi.stubGlobal('fetch', fetchMock);
 
-    const provider = buildRealProvider()!;
-    const challans = await provider.fetchByPlate('dl 3c ab 1234');
+    const challans = await buildEchallanProvider()!.fetchByPlate('dl 3c ab 1234');
 
     const [calledUrl, init] = fetchMock.mock.calls[0];
     expect(calledUrl).toBe('https://production.echallan.app/v1/challans/DL3CAB1234');
@@ -95,12 +93,12 @@ describe('fetchByPlate (mocked network)', () => {
   it('treats 404 as an empty result, not an error', async () => {
     process.env.CHALLAN_PROVIDER_KEY = 'k';
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 404 }));
-    await expect(buildRealProvider()!.fetchByPlate('XX00XX0000')).resolves.toEqual([]);
+    await expect(buildEchallanProvider()!.fetchByPlate('XX00XX0000')).resolves.toEqual([]);
   });
 
   it('throws on other non-2xx responses', async () => {
     process.env.CHALLAN_PROVIDER_KEY = 'k';
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 500 }));
-    await expect(buildRealProvider()!.fetchByPlate('XX00XX0000')).rejects.toThrow(/500/);
+    await expect(buildEchallanProvider()!.fetchByPlate('XX00XX0000')).rejects.toThrow(/500/);
   });
 });

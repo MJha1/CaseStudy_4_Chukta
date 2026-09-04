@@ -98,10 +98,11 @@ export const listProviders = () => request('/providers', z.array(providerInfoSch
 export const fetchVehicleChallans = (
   vehicleId: string,
   providerId: string,
+  consent?: boolean,
 ): Promise<FetchChallansResponse> =>
   request(`/vehicles/${vehicleId}/fetch-challans`, fetchChallansResponseSchema, {
     method: 'POST',
-    body: JSON.stringify({ providerId }),
+    body: JSON.stringify({ providerId, ...(consent !== undefined ? { consent } : {}) }),
   });
 
 // --- Demo data (opt-in) ---

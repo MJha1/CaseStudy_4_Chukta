@@ -51,7 +51,15 @@ vehiclesRouter.post(
       res.status(400).json({ error: 'Unknown provider' });
       return;
     }
-    const challans = await provider.fetchByPlate(vehicle.plate);
+    // Live providers (e.g. InstantPay) require the customer's explicit consent.
+    if (!provider.info.simulated && req.body.consent !== true) {
+      res.status(400).json({ error: 'Consent is required for a live lookup' });
+      return;
+    }
+    const challans = await provider.fetchByPlate(vehicle.plate, {
+      ip: req.ip,
+      consent: req.body.consent === true,
+    });
     res.json({ provider: provider.info, challans });
   },
 );
