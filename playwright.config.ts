@@ -7,8 +7,13 @@ import { defineConfig, devices } from '@playwright/test';
  */
 export default defineConfig({
   testDir: './e2e',
-  timeout: 30_000,
+  timeout: 45_000,
+  // This is an integration suite against a single API process + a shared (remote
+  // Neon) database, and the simulated providers add artificial latency. Run
+  // serially so parallel workers don't contend for that one backend and time out.
   fullyParallel: false,
+  workers: 1,
+  expect: { timeout: 10_000 },
   reporter: 'list',
   use: {
     baseURL: 'http://localhost:5173',
