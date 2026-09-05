@@ -1,19 +1,21 @@
 import type { ProviderInfo } from '@chukta/shared';
 import type { ChallanProvider } from './types.js';
 import { buildSimulatedProviders } from './simulated.js';
+import { buildShowcaseProvider } from './showcase.js';
 import { buildEchallanProvider } from './real.js';
 
 /**
- * The provider registry. The live eChallan.app provider (when configured via
- * env) is listed first; the simulated demo vendors are always available so the
- * app works without credentials and the labelled preview stays demonstrable.
+ * The provider registry. Order: a real live provider (only when configured via
+ * env), then "Chukta Live" — a simulated real-time lookup for the case-study
+ * walkthrough — then the plain demo vendors. Everything but a configured real
+ * provider is simulated, so the app works end-to-end without credentials.
  */
 let cache: ChallanProvider[] | null = null;
 
 export function getProviders(): ChallanProvider[] {
   if (!cache) {
     const live = buildEchallanProvider();
-    cache = [...(live ? [live] : []), ...buildSimulatedProviders()];
+    cache = [...(live ? [live] : []), buildShowcaseProvider(), ...buildSimulatedProviders()];
   }
   return cache;
 }

@@ -23,6 +23,19 @@ const CLASSES: { value: VehicleClass; label: string }[] = [
   { value: 'TRANSPORT', label: 'Transport' },
 ];
 
+type ProviderMode = 'demo' | 'live-demo' | 'live';
+
+/** Presentation mode for a provider; falls back to `simulated` when unset. */
+function providerMode(p?: ProviderInfo): ProviderMode {
+  return p?.mode ?? (p?.simulated ? 'demo' : 'live');
+}
+
+const MODE_BADGE: Record<ProviderMode, { tone: 'sample' | 'ok'; label: string }> = {
+  demo: { tone: 'sample', label: 'Demo' },
+  'live-demo': { tone: 'ok', label: 'Live · demo' },
+  live: { tone: 'ok', label: 'Live' },
+};
+
 export function AddVehiclePage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -52,7 +65,10 @@ export function AddVehiclePage() {
   }, []);
 
   const selectedProvider = providers.find((p) => p.id === providerId);
-  const isLive = !!selectedProvider && !selectedProvider.simulated;
+  const mode = providerMode(selectedProvider);
+  // Both a real live source and the simulated "Live · demo" lookup run the
+  // consent + latency flow; only plain demo vendors skip it.
+  const needsConsent = mode !== 'demo';
 
   function validate(): boolean {
     if (plate.replace(/\s+/g, '').length < 6) {
@@ -93,7 +109,11 @@ export function AddVehiclePage() {
     try {
       const vehicle = await makeVehicle();
       track('vehicle_added', { source: 'autofetch', provider: providerId });
-      const result = await fetchVehicleChallans(vehicle.id, providerId, isLive ? consent : undefined);
+      const result = await fetchVehicleChallans(
+        vehicle.id,
+        providerId,
+        needsConsent ? consent : undefined,
+      );
       setFetchedVehicleId(vehicle.id);
       setFetched(result);
     } catch (e) {
@@ -222,8 +242,8 @@ export function AddVehiclePage() {
                       <span>
                         <span className="flex items-center gap-2">
                           <span className="text-sm font-semibold text-ink">{p.name}</span>
-                          <Badge tone={p.simulated ? 'sample' : 'ok'}>
-                            {p.simulated ? 'Demo' : 'Live'}
+                          <Badge tone={MODE_BADGE[providerMode(p)].tone}>
+                            {MODE_BADGE[providerMode(p)].label}
                           </Badge>
                         </span>
                         {p.note && <span className="block text-[12px] text-muted">{p.note}</span>}
@@ -239,7 +259,7 @@ export function AddVehiclePage() {
                     </button>
                   ))}
                 </div>
-                {isLive && (
+                {needsConsent && (
                   <label className="flex items-start gap-2.5 rounded-xl bg-brand-soft p-3 text-[12px] text-brand-dark">
                     <input
                       type="checkbox"
@@ -248,8 +268,9 @@ export function AddVehiclePage() {
                       className="mt-0.5 size-4 accent-brand"
                     />
                     <span>
-                      I consent to {selectedProvider?.name} looking up this vehicle's challans on my
-                      behalf, from official VAHAN/mParivahan sources.
+                      {mode === 'live-demo'
+                        ? `I understand ${selectedProvider?.name} is a simulated real-time lookup for demonstration — the records are demo data, not a live government source.`
+                        : `I consent to ${selectedProvider?.name} looking up this vehicle's challans on my behalf, from official VAHAN/mParivahan sources.`}
                     </span>
                   </label>
                 )}
@@ -257,7 +278,7 @@ export function AddVehiclePage() {
                   variant="secondary"
                   size="block"
                   onClick={fetchFromProvider}
-                  disabled={busy || !providerId || (isLive && !consent)}
+                  disabled={busy || !providerId || (needsConsent && !consent)}
                 >
                   <Search className="size-4" /> {busy ? 'Fetching…' : 'Fetch challans'}
                 </Button>

@@ -144,12 +144,25 @@ export type AnalyticsEvent = z.infer<typeof analyticsEventSchema>;
 // Challan-data providers (the "fetch challans" seam)
 // ---------------------------------------------------------------------------
 
+/**
+ * Provider mode drives the UI badge and the consent step:
+ *   - 'demo'      — plain simulated vendor ("Demo" badge, no consent needed)
+ *   - 'live-demo' — simulated data presented through the real-time lookup flow
+ *                   (consent + latency + detailed records), badged "Live · demo"
+ *                   so it is never mistaken for a genuine government source
+ *   - 'live'      — a real licensed data source ("Live" badge)
+ */
+export const providerModeSchema = z.enum(['demo', 'live-demo', 'live']);
+export type ProviderMode = z.infer<typeof providerModeSchema>;
+
 /** Metadata for a challan-data provider the app can fetch from. */
 export const providerInfoSchema = z.object({
   id: z.string(),
   name: z.string(),
   /** True for a simulated/demo provider; false for a real licensed data source. */
   simulated: z.boolean(),
+  /** Presentation/consent mode; defaults to 'demo'/'live' derived from `simulated`. */
+  mode: providerModeSchema.optional(),
   note: z.string().optional(),
 });
 export type ProviderInfo = z.infer<typeof providerInfoSchema>;

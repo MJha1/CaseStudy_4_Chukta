@@ -26,16 +26,17 @@ test('V2–V4 — manual add with class + sold date succeeds', async ({ page }) 
   await expect(page).toHaveURL(/\/challans/);
 });
 
-test('V5–V7 — provider fetch is labelled demo, previews and confirms challans', async ({ page }) => {
+test('V5–V7 — a plain demo vendor previews and confirms challans', async ({ page }) => {
   // V5 — the fetch panel is present, labelled as a demo, and lists vendors.
   await expect(
     page.getByText(/a live version fetches from a licensed VAHAN\/mParivahan data partner/i),
   ).toBeVisible();
   await expect(page.getByText('ChallanBridge')).toBeVisible();
-  // Every listed provider is badged "Demo" (3 simulated vendors).
+  // The three plain vendors are badged "Demo" ("Live · demo" is a separate badge).
   await expect(page.getByText('Demo', { exact: true })).toHaveCount(3);
 
-  // V6 — fetch a vehicle (ChallanBridge is preselected and always returns 2–3).
+  // V6 — pick a plain demo vendor (no consent needed) and fetch; it returns 2–3.
+  await page.getByRole('button', { name: /ChallanBridge/ }).click();
   await page.getByLabel(/registration number/i).fill('KA01AA1111');
   await page.getByRole('button', { name: /^Fetch challans$/i }).click();
 
@@ -48,4 +49,25 @@ test('V5–V7 — provider fetch is labelled demo, previews and confirms challan
   await page.getByRole('button', { name: /^Add \d+ challans$/i }).click();
   await expect(page).toHaveURL(/\/challans/);
   await expect(page.getByText('KA01AA1111').first()).toBeVisible({ timeout: 15_000 });
+});
+
+test('V8 — Chukta Live (demo) is consent-gated and returns the curated case', async ({ page }) => {
+  // Chukta Live is badged "Live · demo" and preselected first.
+  await expect(page.getByText('Live · demo')).toBeVisible();
+
+  await page.getByRole('button', { name: /Chukta Live/ }).click();
+  await page.getByLabel(/registration number/i).fill('DL01CAB4321');
+
+  // Consent is required: the fetch button is disabled until the box is checked.
+  const fetchBtn = page.getByRole('button', { name: /^Fetch challans$/i });
+  await expect(fetchBtn).toBeDisabled();
+  await page.getByRole('checkbox').check();
+  await expect(fetchBtn).toBeEnabled();
+
+  await fetchBtn.click();
+  await expect(page.getByText(/Chukta Live \(demo\) returned these for DL01CAB4321/i)).toBeVisible({
+    timeout: 15_000,
+  });
+  // The curated flagship case is four detailed records.
+  await expect(page.getByText(/Found 4 challans/i)).toBeVisible();
 });
