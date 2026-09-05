@@ -39,16 +39,44 @@ function coerceDate(v: unknown): string {
   return new Date().toISOString().slice(0, 10);
 }
 
+/** Keys under which a vendor may nest its challan array. */
+const CHALLAN_ARRAY_KEYS = ['challans', 'pending_challans', 'data', 'results'] as const;
+
 /** Find the array of challans wherever the vendor nests it. */
 function extractChallanArray(body: unknown): unknown[] {
   if (Array.isArray(body)) return body;
   if (body && typeof body === 'object') {
     const o = body as Record<string, unknown>;
-    for (const key of ['challans', 'pending_challans', 'data', 'results']) {
+    for (const key of CHALLAN_ARRAY_KEYS) {
       if (Array.isArray(o[key])) return o[key] as unknown[];
     }
   }
   return [];
+}
+
+/** Read a response body as JSON, tolerating a missing/non-JSON body. */
+async function readJsonSafely(res: { json(): Promise<unknown> }): Promise<unknown> {
+  try {
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * A 404 is ambiguous: it can mean "no challans for this plate" (a real, empty
+ * result) OR that the endpoint itself is wrong — a misconfigured base URL hits a
+ * generic router 404 with an error envelope, e.g. Fastify's
+ * {"error":"RouteNotFound", ...}. Only the former is a legitimate empty result;
+ * the latter must surface, not masquerade as "no records" (that silent empty is
+ * exactly what hid a dead endpoint in production).
+ */
+function isEndpointError(body: unknown): boolean {
+  if (!body || typeof body !== 'object') return false;
+  const o = body as Record<string, unknown>;
+  const looksLikeChallanPayload =
+    Array.isArray(body) || CHALLAN_ARRAY_KEYS.some((k) => Array.isArray(o[k]));
+  return !looksLikeChallanPayload && typeof o.error === 'string' && o.error.trim().length > 0;
 }
 
 function mapOne(raw: unknown): ProviderChallan | null {
@@ -99,8 +127,19 @@ export function buildEchallanProvider(): ChallanProvider | null {
           headers: { authorization: `Bearer ${key}`, accept: 'application/json' },
           signal: controller.signal,
         });
-        // A vehicle with no records is a normal, empty result — not an error.
-        if (res.status === 404) return [];
+        if (res.status === 404) {
+          // "No records for this plate" is a valid empty result; a dead/wrong
+          // endpoint (an error envelope) is not — surface it loudly.
+          const body = await readJsonSafely(res);
+          if (isEndpointError(body)) {
+            const label = String((body as Record<string, unknown>).error);
+            throw new Error(
+              `eChallan.app returned 404 (${label}) for ${base}/challans/… — ` +
+                'the endpoint looks misconfigured; check CHALLAN_PROVIDER_URL.',
+            );
+          }
+          return mapEchallanResponse(body);
+        }
         if (!res.ok) throw new Error(`eChallan.app responded ${res.status}`);
         return mapEchallanResponse(await res.json());
       } finally {

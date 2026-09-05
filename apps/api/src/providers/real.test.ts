@@ -90,10 +90,36 @@ describe('fetchByPlate (mocked network)', () => {
     expect(challans[0].offence).toBe('Overspeeding');
   });
 
-  it('treats 404 as an empty result, not an error', async () => {
+  it('treats a genuine "no records" 404 as an empty result, not an error', async () => {
+    process.env.CHALLAN_PROVIDER_KEY = 'k';
+    // A real no-records 404: an empty/challan-shaped body, no error envelope.
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({ ok: false, status: 404, json: async () => ({ challans: [] }) }),
+    );
+    await expect(buildEchallanProvider()!.fetchByPlate('XX00XX0000')).resolves.toEqual([]);
+  });
+
+  it('treats a bodyless 404 as an empty result', async () => {
     process.env.CHALLAN_PROVIDER_KEY = 'k';
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 404 }));
     await expect(buildEchallanProvider()!.fetchByPlate('XX00XX0000')).resolves.toEqual([]);
+  });
+
+  it('throws on a 404 error envelope (misconfigured endpoint), not a silent empty', async () => {
+    process.env.CHALLAN_PROVIDER_KEY = 'k';
+    // The dead-endpoint case observed in production: a generic router 404.
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 404,
+        json: async () => ({ error: 'RouteNotFound', message: 'Requested route not found.' }),
+      }),
+    );
+    await expect(buildEchallanProvider()!.fetchByPlate('XX00XX0000')).rejects.toThrow(
+      /RouteNotFound|misconfigured/,
+    );
   });
 
   it('throws on other non-2xx responses', async () => {
